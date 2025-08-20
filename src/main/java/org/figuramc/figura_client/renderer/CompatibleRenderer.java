@@ -70,10 +70,10 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
             currentRenderTypes = switch (part.getRenderType()) {
                 case FiguraRenderType.EndPortal __ -> List.of(RenderType.endPortal());
                 case FiguraRenderType.EndGateway __ -> List.of(RenderType.endGateway());
-                case FiguraRenderType.Basic basic -> {
+                case FiguraRenderType.Basic(MinecraftTexture mainTex, MinecraftTexture emissiveTex) -> {
                     ArrayList<RenderType> list = new ArrayList<>(2);
-                    if (basic.mainTex != null) list.add(RenderType.entityTranslucent(texToLocation(basic.mainTex)));
-                    if (basic.emissiveTex != null) list.add(RenderType.eyes(texToLocation(basic.emissiveTex)));
+                    if (mainTex != null) list.add(RenderType.entityTranslucent(texToLocation(mainTex)));
+                    if (emissiveTex != null) list.add(RenderType.eyes(texToLocation(emissiveTex)));
                     yield list;
                 }
             };
@@ -103,7 +103,7 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
                 VertexConsumer consumer = bufferSource.getBuffer(renderType);
                 for (int i = 0; i < vertices.length; i += 16) {
                     pos.set(vertices[i], vertices[i+1], vertices[i+2], 1.0).mul(posMatrix);
-                    norm.set(vertices[i+3], vertices[i+4], vertices[i+5]).mul(normalMatrix);
+                    norm.set(vertices[i+3], vertices[i+4], vertices[i+5]).mul(normalMatrix).normalize();
 
                     // Skinning is ignored in compatible mode (TODO add, even if not performant)
                     consumer.addVertex(pos.x, pos.y, pos.z)

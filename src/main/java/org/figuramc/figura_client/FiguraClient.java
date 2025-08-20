@@ -42,7 +42,7 @@ public class FiguraClient implements ClientModInitializer {
 	}
 
 	// Test boolean
-	public static boolean LOADED_TEST_AVATAR = false;
+	public static boolean LOADED_TEST_AVATARS = false;
 
 	// Mod ID
 	public static final String MOD_ID = "figura";
