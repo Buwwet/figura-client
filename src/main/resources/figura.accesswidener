@@ -1,0 +1,13 @@
+accessWidener v2 named
+
+# Getting values from LivingEntityRenderer
+accessible method net/minecraft/client/renderer/entity/LivingEntityRenderer getWhiteOverlayProgress (Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;)F
+accessible field net/minecraft/client/renderer/entity/LivingEntityRenderer layers Ljava/util/List;
+
+# Get transform of item model, to use as fallback
+accessible field net/minecraft/client/renderer/item/ItemStackRenderState$LayerRenderState transform Lnet/minecraft/client/renderer/block/model/ItemTransform;
+
+# Various entity model fields
+accessible field net/minecraft/client/renderer/entity/layers/WingsLayer elytraModel Lnet/minecraft/client/model/ElytraModel;
+accessible field net/minecraft/client/renderer/entity/layers/CapeLayer model Lnet/minecraft/client/model/HumanoidModel;
+accessible field net/minecraft/client/model/PlayerCapeModel cape Lnet/minecraft/client/model/geom/ModelPart;

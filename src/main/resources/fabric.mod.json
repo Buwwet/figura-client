@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "figura",
+	"version": "${version}",
+	"name": "Figura",
+	"description": "its like hes in some king of... Figura Mod",
+	"authors": [
+		"TooManyLimits"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"icon": "assets/figura-client/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"org.figuramc.figura_client.FiguraClient"
+		]
+	},
+	"mixins": [
+		"figura.mixins.json"
+	],
+	"accessWidener": "figura.accesswidener",
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {}
+}
