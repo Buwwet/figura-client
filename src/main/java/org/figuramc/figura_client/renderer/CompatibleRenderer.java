@@ -11,8 +11,7 @@ import org.figuramc.figura_core.minecraft_interop.model_part_renderers.FiguraMod
 import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
 import org.figuramc.figura_core.model.part.FiguraModelPart;
 import org.figuramc.figura_core.model.shader.FiguraRenderType;
-import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
-import org.figuramc.figura_core.util.FiguraTransformStack;
+import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -58,8 +57,8 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
             int overlay
     ) {
 
-        for (var callback : part.preRenderCallbacks)
-            callback.call(new CallbackItem.F32(tickDelta));
+//        for (var callback : part.preRenderCallbacks)
+//            callback.call(new CallbackItem.F32(tickDelta));
 
         // Cancel if not invisible
         if (!part.transform.getVisible())
@@ -84,11 +83,11 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
         matrixStack.push();
         part.transform.affect(matrixStack);
 
-        for (var callback : part.midRenderCallbacks)
-            callback.call(new CallbackItem.F32(tickDelta));
+//        for (var callback : part.midRenderCallbacks)
+//            callback.call(new CallbackItem.F32(tickDelta));
 
         // Render children recursively
-        for (FiguraModelPart child : part.children.values())
+        for (FiguraModelPart child : part.children)
             recursiveRender(child, bufferSource, currentRenderTypes, renderTypePriority, matrixStack, tickDelta, light, overlay);
 
         // If this has vertices, send them in
@@ -116,8 +115,8 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
             }
         }
 
-        for (var callback : part.postRenderCallbacks)
-            callback.call(new CallbackItem.F32(tickDelta));
+//        for (var callback : part.postRenderCallbacks)
+//            callback.call(new CallbackItem.F32(tickDelta));
 
         // Pop matrix stack
         matrixStack.pop();

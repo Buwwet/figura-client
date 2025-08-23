@@ -10,7 +10,7 @@ import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
-import org.figuramc.figura_core.util.NullEmptyStack;
+import org.figuramc.figura_core.util.data_structures.NullEmptyStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

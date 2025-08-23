@@ -13,7 +13,7 @@ import org.figuramc.figura_client.renderer.CompatibleRenderer;
 import org.figuramc.figura_core.avatars.components.EntityRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
-import org.figuramc.figura_core.util.FiguraTransformStack;
+import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

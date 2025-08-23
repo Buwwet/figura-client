@@ -25,7 +25,7 @@ import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
-import org.figuramc.figura_core.util.FiguraTransformStack;
+import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;

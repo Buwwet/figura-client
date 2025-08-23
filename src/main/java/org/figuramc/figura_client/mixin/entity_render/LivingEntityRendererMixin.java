@@ -14,7 +14,7 @@ import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
 import org.figuramc.figura_core.script_hooks.callback.items.EntityView;
-import org.figuramc.figura_core.util.FiguraTransformStack;
+import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

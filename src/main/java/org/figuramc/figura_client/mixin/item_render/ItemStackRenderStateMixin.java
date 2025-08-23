@@ -22,7 +22,7 @@ import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemSt
 import org.figuramc.figura_core.model.part.CustomItemModelPart;
 import org.figuramc.figura_core.model.part.FiguraModelPart;
 import org.figuramc.figura_core.model.renderers.Renderable;
-import org.figuramc.figura_core.util.FiguraTransformStack;
+import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
