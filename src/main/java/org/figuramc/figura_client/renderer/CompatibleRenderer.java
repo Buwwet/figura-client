@@ -1,6 +1,7 @@
 package org.figuramc.figura_client.renderer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -9,7 +10,9 @@ import org.figuramc.figura_client.textures.MinecraftTextureImpl;
 import org.figuramc.figura_client.textures.OwnedMinecraftTextureImpl;
 import org.figuramc.figura_core.minecraft_interop.model_part_renderers.FiguraModelPartRenderer;
 import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
-import org.figuramc.figura_core.model.part.FiguraModelPart;
+import org.figuramc.figura_core.model.part.parts.FiguraModelPart;
+import org.figuramc.figura_core.model.part.tasks.RenderTask;
+import org.figuramc.figura_core.model.part.tasks.TextTask;
 import org.figuramc.figura_core.model.shader.FiguraRenderType;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.joml.Matrix3f;
@@ -71,8 +74,8 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
                 case FiguraRenderType.EndGateway __ -> List.of(RenderType.endGateway());
                 case FiguraRenderType.Basic(MinecraftTexture mainTex, MinecraftTexture emissiveTex) -> {
                     ArrayList<RenderType> list = new ArrayList<>(2);
-                    if (mainTex != null) list.add(RenderType.entityTranslucent(texToLocation(mainTex)));
-                    if (emissiveTex != null) list.add(RenderType.eyes(texToLocation(emissiveTex)));
+                    if (mainTex != null) list.add(RenderType.entityTranslucent(texToLocation(mainTex))); // TODO deal with memory leak this causes (Util.memoize)
+                    if (emissiveTex != null) list.add(RenderType.eyes(texToLocation(emissiveTex))); // TODO deal with memory leak this causes (Util.memoize)
                     yield list;
                 }
             };
@@ -115,6 +118,10 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
             }
         }
 
+        // Run render tasks
+        for (var task : part.renderTasks)
+            renderTask(task, bufferSource, matrixStack, light, overlay);
+
 //        for (var callback : part.postRenderCallbacks)
 //            callback.call(new CallbackItem.F32(tickDelta));
 
@@ -132,5 +139,17 @@ public class CompatibleRenderer implements FiguraModelPartRenderer {
             default -> TextureManager.INTENTIONAL_MISSING_TEXTURE;
         };
     }
+
+    private static void renderTask(RenderTask<?> task, MultiBufferSource bufferSource, FiguraTransformStack matrixStack, int light, int overlay) {
+        matrixStack.push();
+        task.getTransform().affect(matrixStack);
+        switch (task) {
+            case TextTask textTask -> FiguraTextRenderer.render(textTask.formattedText, bufferSource, matrixStack, light, overlay);
+        }
+        matrixStack.pop();
+    }
+
+
+
 
 }

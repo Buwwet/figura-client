@@ -16,6 +16,7 @@
     "entity_render.EntityRenderStateMixin",
     "entity_render.LivingEntityRendererMixin",
     "entity_tick.ClientLevelMixin",
+    "fix.ObfuscationPerformanceFix",
     "general_render.GameRendererMixin",
     "general_render.RenderSystemMixin",
     "item_render.ItemModelResolverMixin",
