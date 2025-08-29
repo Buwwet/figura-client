@@ -7,12 +7,17 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.UUID;
 
@@ -37,6 +42,11 @@ public abstract class EntityRenderDispatcherMixin {
             FiguraClient.AVATAR_RENDERING_STACK.pop();
             FiguraClient.IS_LIVING_ENTITY_STACK.pop();
         }
+    }
+
+    @Inject(method = "onResourceManagerReload", at = @At("TAIL"))
+    public void clearModelCache(ResourceManager resourceManager, CallbackInfo ci) {
+        VanillaModelCache.clearCache();
     }
 
 }

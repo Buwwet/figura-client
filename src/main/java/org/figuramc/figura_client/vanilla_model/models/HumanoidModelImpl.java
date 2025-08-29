@@ -1,5 +1,6 @@
-package org.figuramc.figura_client.vanilla_model;
+package org.figuramc.figura_client.vanilla_model.models;
 
+import org.figuramc.figura_client.vanilla_model.VanillaPartImpl;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaPart;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.vanilla_models.HumanoidModel;
 import org.jetbrains.annotations.Nullable;

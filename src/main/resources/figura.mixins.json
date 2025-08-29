@@ -9,7 +9,6 @@
     "requireAnnotations": true
   },
   "client": [
-    "ClientLevelMixin",
     "MinecraftMixin",
     "entity_render.EntityRenderDispatcherMixin",
     "entity_render.EntityRendererMixin",

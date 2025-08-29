@@ -34,20 +34,20 @@ import java.util.Map;
 @Mixin(ModelPart.class)
 public abstract class ModelPartMixin implements ModelPartTrackingAccess {
 
+    // VanillaPart field so we know which logical VanillaPart this is correlated to, if any
     @Unique private @Nullable VanillaPart vanillaPart;
-
     @Override public @Nullable VanillaPart figura_client$getVanillaPart() { return vanillaPart; }
     @Override public void figura_client$setVanillaPart(VanillaPart vanillaPart) { this.vanillaPart = vanillaPart; }
 
+    // Shadowed variables
     @Shadow public float x, y, z, xRot, yRot, zRot, xScale, yScale, zScale;
     @Shadow public boolean visible = true;
-
     @Shadow private PartPose initialPose;
     @Shadow public boolean skipDraw;
-
     @Shadow protected abstract void compile(PoseStack.Pose pose, VertexConsumer vertexConsumer, int i, int j, int k);
-
     @Shadow @Final private Map<String, ModelPart> children;
+
+    // Static variables to pass values around
     @Unique private static VanillaRendering currentComponent = null;
     @Unique private static boolean isLiving = false;
     @Unique private static VanillaRendering.ScriptVanillaPart currentPart = null;

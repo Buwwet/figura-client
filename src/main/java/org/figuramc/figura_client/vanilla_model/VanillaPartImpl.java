@@ -25,7 +25,6 @@ public class VanillaPartImpl extends VanillaPart {
         return this.parent;
     }
 
-
     public static <S extends LivingEntityRenderState, M extends EntityModel<S>, L extends RenderLayer<S, M>> L getRenderLayer(LivingEntityRenderer<?, S, M> renderer, Class<L> layerClass) {
         for (var layer : renderer.layers) {
             if (layerClass.isInstance(layer))

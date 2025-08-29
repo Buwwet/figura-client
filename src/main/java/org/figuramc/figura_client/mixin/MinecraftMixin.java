@@ -1,6 +1,7 @@
 package org.figuramc.figura_client.mixin;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
@@ -20,6 +21,15 @@ public class MinecraftMixin {
             avatar.tick();
             avatar.runEvent(Event.CLIENT_TICK, CallbackItem.Unit.INSTANCE);
         });
+    }
+
+    // Clear avatars when leaving the level. TODO come up with a cleaner way?
+    @Inject(method = "updateLevelInEngines", at = @At("HEAD"))
+    private void clearLevelHook(ClientLevel clientLevel, CallbackInfo ci) {
+        if (clientLevel == null) {
+            AvatarManagers.ENTITIES.clear();
+            AvatarManagers.GUIS.clear();
+        }
     }
 
 }

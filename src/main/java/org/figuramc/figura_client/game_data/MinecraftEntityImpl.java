@@ -1,7 +1,6 @@
 package org.figuramc.figura_client.game_data;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -10,7 +9,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura_client.FiguraClient;
-import org.figuramc.figura_client.vanilla_model.PlayerModelImpl;
+import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
+import org.figuramc.figura_client.vanilla_model.models.PlayerModelImpl;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEntity;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
@@ -35,12 +35,7 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
 
     @Override
     public VanillaModel getModel() {
-        if (entity instanceof Player) {
-            EntityRenderer<?, ?> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(entity);
-            if (renderer instanceof PlayerRenderer playerRenderer)
-                return new PlayerModelImpl(playerRenderer); // Bweh, todo fix by caching this
-        }
-        return VanillaModel.EMPTY;
+        return VanillaModelCache.get(entity);
     }
 
     @Override

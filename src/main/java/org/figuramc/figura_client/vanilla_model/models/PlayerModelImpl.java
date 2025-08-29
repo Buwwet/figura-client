@@ -1,10 +1,11 @@
-package org.figuramc.figura_client.vanilla_model;
+package org.figuramc.figura_client.vanilla_model.models;
 
 import net.minecraft.client.model.PlayerCapeModel;
 import net.minecraft.client.renderer.entity.layers.CapeLayer;
 import net.minecraft.client.renderer.entity.layers.WingsLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.renderer.entity.state.PlayerRenderState;
+import org.figuramc.figura_client.vanilla_model.VanillaPartImpl;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaPart;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.vanilla_models.PlayerModel;
 import org.jetbrains.annotations.Nullable;
