@@ -5,16 +5,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
-import org.figuramc.figura_client.renderer.CompatibleRenderer;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
-import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
 import org.figuramc.figura_core.data.ModuleImporter;
@@ -71,7 +67,6 @@ public class FiguraClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		// Initialize Figura connection point
-		FiguraConnectionPoint.MODEL_PART_RENDERER_FACTORY = CompatibleRenderer::new;
 		FiguraConnectionPoint.TEXTURE_PROVIDER = new TextureProviderImpl();
 		FiguraConnectionPoint.GAME_DATA_PROVIDER = new GameDataProviderImpl();
 		FiguraConnectionPoint.ERROR_REPORTER = new ErrorReporterImpl();

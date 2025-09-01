@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
 import org.figuramc.figura_client.ducks.EntityRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
-import org.figuramc.figura_client.renderer.CompatibleRenderer;
+import org.figuramc.figura_client.renderer.CompatibleRenderer2;
 import org.figuramc.figura_core.avatars.components.EntityRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
@@ -75,27 +75,27 @@ public class LivingEntityRendererMixin {
         try (AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(livingEntity))) {
             if (avatar == null) return;
             EntityRoot root = avatar.get().getComponent(EntityRoot.TYPE);
-            if (root != null && root.root.renderer instanceof CompatibleRenderer renderer) {
-                FiguraTransformStack matrixStack = new FiguraTransformStack();
-                matrixStack.peekPosition().set(poseStack.last().pose());
-                matrixStack.peekNormal().set(poseStack.last().normal());
-
-                // Undo the problematic translations above:
-                // This has to be 1.500 exactly. NOT 1.501.
-                // I have not been able to figure out why,
-                // even though I have probably stared at the
-                // vanilla source code for entity rendering for weeks in total.
-                matrixStack.translate(0, 1.500f, 0);
-                matrixStack.scale(-1, -1, 1);
-                // Grab the overlay:
-                float whiteOverlayProgress = ((LivingEntityRenderer) (Object) this).getWhiteOverlayProgress(renderState);
-                int overlayCoords = LivingEntityRenderer.getOverlayCoords(renderState, whiteOverlayProgress);
-                // Render
-                float tickDelta = ((EntityRenderStateAccess) renderState).figura_client$getTickDelta();
-
-                renderer.setup(multiBufferSource, matrixStack, tickDelta, light, overlayCoords);
-                avatar.get().tryRenderModelPart(renderer);
-            }
+            if (root == null) return;
+            avatar.get().tryRenderModelPart(() -> {
+                if (root.root.clientState == null) root.root.clientState = new CompatibleRenderer2(root.root);
+                if (root.root.clientState instanceof CompatibleRenderer2 renderer) {
+                    FiguraTransformStack stack = new FiguraTransformStack();
+                    stack.peekPosition().set(poseStack.last().pose());
+                    stack.peekNormal().set(poseStack.last().normal());
+                    // Undo the problematic translations above:
+                    // This has to be 1.500 exactly. NOT 1.501.
+                    // I have not been able to figure out why,
+                    // even though I have probably stared at the
+                    // vanilla source code for entity rendering for weeks in total.
+                    stack.translate(0, 1.500f, 0);
+                    stack.scale(-1, -1, 1);
+                    // Grab the overlay:
+                    float whiteOverlayProgress = ((LivingEntityRenderer) (Object) this).getWhiteOverlayProgress(renderState);
+                    int overlayCoords = LivingEntityRenderer.getOverlayCoords(renderState, whiteOverlayProgress);
+                    // Render
+                    renderer.render(multiBufferSource, stack, light, overlayCoords);
+                }
+            });
         }
     }
 }

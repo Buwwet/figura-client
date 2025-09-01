@@ -3,7 +3,6 @@ package org.figuramc.figura_client.mixin.item_render;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -13,14 +12,14 @@ import net.minecraft.world.item.ItemStack;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.ducks.ItemStackRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftItemStackImpl;
-import org.figuramc.figura_client.renderer.CompatibleRenderer;
+import org.figuramc.figura_client.renderer.CompatibleRenderer2;
 import org.figuramc.figura_core.avatars.components.CustomItems;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
 import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemStack;
 import org.figuramc.figura_core.model.part.parts.CustomItemModelPart;
 import org.figuramc.figura_core.model.part.parts.FiguraModelPart;
-import org.figuramc.figura_core.model.renderers.Renderable;
+import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -77,9 +76,9 @@ public class ItemStackRenderStateMixin implements ItemStackRenderStateAccess {
         if (avatar == null || (itemsComponent = avatar.get().getComponent(CustomItems.TYPE)) == null) return false;
         MinecraftItemStack stackImpl = new MinecraftItemStackImpl(itemStack);
         ItemRenderContext renderContext = FiguraClient.RENDER_CONTEXTS.get(itemDisplayContext);
-        Renderable<? extends FiguraModelPart> renderablePart = itemsComponent.getModelPart(stackImpl, renderContext);
+        RenderingRoot<?> renderablePart = itemsComponent.getModelPart(stackImpl, renderContext);
         if (renderablePart == null) return false;
-        FiguraModelPart modelPart = renderablePart.part;
+        FiguraModelPart modelPart = renderablePart.rootPart;
 
         // If we found one, render it:
         MATRIX_STACK.peekPosition().set(poseStack.last().pose());
@@ -104,11 +103,13 @@ public class ItemStackRenderStateMixin implements ItemStackRenderStateAccess {
                 MATRIX_STACK.translate(-0.5f, -0.25f, -0.5f);
             }
         }
-        float tickDelta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        if (renderablePart.renderer instanceof CompatibleRenderer renderer) {
-            renderer.setup(multiBufferSource, MATRIX_STACK, tickDelta, light, overlay);
-            avatar.get().tryRenderModelPart(renderer);
-        }
+//        float tickDelta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        avatar.get().tryRenderModelPart(() -> {
+            if (renderablePart.clientState == null) renderablePart.clientState = new CompatibleRenderer2(renderablePart);
+            if (renderablePart.clientState instanceof CompatibleRenderer2 renderer) {
+                renderer.render(multiBufferSource, MATRIX_STACK, light, overlay);
+            }
+        });
         // Successfully overrode it!
         return true;
     }

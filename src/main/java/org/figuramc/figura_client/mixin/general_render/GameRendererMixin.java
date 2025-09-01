@@ -18,7 +18,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.Entity;
-import org.figuramc.figura_client.renderer.CompatibleRenderer;
+import org.figuramc.figura_client.renderer.CompatibleRenderer2;
 import org.figuramc.figura_core.avatars.Avatar;
 import org.figuramc.figura_core.avatars.components.HudRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
@@ -114,15 +114,17 @@ public class GameRendererMixin {
                 Avatar<?> avatar = avatarView.get();
                 HudRoot hudRoot = avatar.getComponent(HudRoot.TYPE);
                 if (hudRoot == null) continue;
-                if (hudRoot.root.renderer instanceof CompatibleRenderer renderer) {
-                    MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-                    FiguraTransformStack stack = new FiguraTransformStack();
-                    stack.scale(-1.0f, -1.0f, 1.0f); // Flip X and Y axis
-                    float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
-                    renderer.setup(bufferSource, stack, tickDelta, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
-                    avatar.tryRenderModelPart(renderer);
-                    bufferSource.endBatch(); // Ensure we end the batch
-                }
+                avatar.tryRenderModelPart(() -> {
+                    if (hudRoot.root.clientState == null) hudRoot.root.clientState = new CompatibleRenderer2(hudRoot.root);
+                    if (hudRoot.root.clientState instanceof CompatibleRenderer2 renderer) {
+                        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+                        FiguraTransformStack stack = new FiguraTransformStack();
+                        stack.scale(-1.0f, -1.0f, 1.0f); // Flip X and Y axis
+//                        float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
+                        renderer.render(bufferSource, stack, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                        bufferSource.endBatch(); // Ensure we end the batch
+                    }
+                });
             }
         } finally {
             // Remember to close views

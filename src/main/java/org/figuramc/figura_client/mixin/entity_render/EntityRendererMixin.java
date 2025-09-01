@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.ducks.EntityRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
-import org.figuramc.figura_client.renderer.CompatibleRenderer;
+import org.figuramc.figura_client.renderer.CompatibleRenderer2;
 import org.figuramc.figura_core.avatars.components.EntityRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
@@ -39,14 +39,16 @@ public class EntityRendererMixin {
             if (avatar == null) return;
             EntityRoot root = avatar.get().getComponent(EntityRoot.TYPE);
             if (root != null) {
-                float tickDelta = ((EntityRenderStateAccess) renderState).figura_client$getTickDelta();
-                if (root.root.renderer instanceof CompatibleRenderer renderer) {
-                    FiguraTransformStack stack = new FiguraTransformStack();
-                    stack.peekPosition().set(poseStack.last().pose());
-                    stack.peekNormal().set(poseStack.last().normal());
-                    renderer.setup(multiBufferSource, stack, tickDelta, light, OverlayTexture.NO_OVERLAY);
-                    avatar.get().tryRenderModelPart(renderer);
-                }
+//                float tickDelta = ((EntityRenderStateAccess) renderState).figura_client$getTickDelta();
+                avatar.get().tryRenderModelPart(() -> {
+                    if (root.root.clientState == null) root.root.clientState = new CompatibleRenderer2(root.root);
+                    if (root.root.clientState instanceof CompatibleRenderer2 renderer) {
+                        FiguraTransformStack stack = new FiguraTransformStack();
+                        stack.peekPosition().set(poseStack.last().pose());
+                        stack.peekNormal().set(poseStack.last().normal());
+                        renderer.render(multiBufferSource, stack, light, OverlayTexture.NO_OVERLAY);
+                    }
+                });
             }
         }
     }
