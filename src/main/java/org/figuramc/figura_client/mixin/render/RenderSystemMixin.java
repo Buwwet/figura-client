@@ -1,7 +1,7 @@
-package org.figuramc.figura_client.mixin.general_render;
+package org.figuramc.figura_client.mixin.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import org.figuramc.figura_client.util.RenderTasks;
+import org.figuramc.figura_client.util.RenderUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,7 +12,7 @@ public class RenderSystemMixin {
 
     @Inject(method = "executePendingTasks", at = @At("HEAD"), remap = false)
     private static void onExecutePendingTasks(CallbackInfo ci) {
-        for (var task = RenderTasks.TASKS.poll(); task != null; task = RenderTasks.TASKS.poll())
+        for (var task = RenderUtils.TASKS.poll(); task != null; task = RenderUtils.TASKS.poll())
             task.run();
     }
 

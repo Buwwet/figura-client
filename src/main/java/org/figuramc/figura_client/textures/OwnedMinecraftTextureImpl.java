@@ -1,6 +1,5 @@
 package org.figuramc.figura_client.textures;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -11,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.ResourceLocation;
 import org.figuramc.figura_client.FiguraClient;
-import org.figuramc.figura_client.util.RenderTasks;
+import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.minecraft_interop.texture.OwnedMinecraftTexture;
 import org.figuramc.figura_core.minecraft_interop.texture.ReadableMinecraftTexture;
 
@@ -72,13 +71,14 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
         backingTexture.setPixel(x, y, color);
     }
 
-    private synchronized void createGpuTexIfNeeded() {
+    private void createGpuTexIfNeeded() {
         if (texture == null) {
             // Create texture on GPU
             GpuDevice gpuDevice = RenderSystem.getDevice();
-            int usage = GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING;
+            int usage = GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_RENDER_ATTACHMENT;
             this.texture = gpuDevice.createTexture(location.getPath(), usage, TextureFormat.RGBA8, width, height, 1, 1);
             this.texture.setTextureFilter(FilterMode.NEAREST, false);
+            gpuDevice.createCommandEncoder().clearColorTexture(this.texture, 0); // Clear to zeros
             this.textureView = gpuDevice.createTextureView(this.texture);
             // Register this to the texture manager
             Minecraft.getInstance().getTextureManager().register(location, this);
@@ -88,12 +88,10 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
     @Override
     public CompletableFuture<Void> commit() {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderTasks.runOnRenderThread(() -> {
+        RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
-                synchronized (this) {
-                    createGpuTexIfNeeded();
-                    RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture);
-                }
+                createGpuTexIfNeeded();
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture);
             }
             future.complete(null);
         });
@@ -103,12 +101,10 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
     @Override
     public CompletableFuture<Void> commitRegion(int x, int y, int width, int height) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderTasks.runOnRenderThread(() -> {
+        RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
-                synchronized (this) {
-                    createGpuTexIfNeeded();
-                    RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture, 0, 0, x, y, width, height, x, y);
-                }
+                createGpuTexIfNeeded();
+                RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture, 0, 0, x, y, width, height, x, y);
             }
             future.complete(null);
         });
@@ -136,17 +132,17 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
 
     @Override
     public void destroy() {
-        // TODO this should be made thread-safe, right?
-        Minecraft.getInstance().getTextureManager().release(location);
         this.close();
     }
 
     @Override
-    public synchronized void close() {
-        if (this.backingTexture != null) {
+    public void close() {
+        RenderUtils.runOnRenderThread(() -> {
+            if (isClosed()) return;
             this.backingTexture.close();
             this.backingTexture = null;
-        }
-        super.close();
+            super.close();
+            Minecraft.getInstance().getTextureManager().release(location);
+        });
     }
 }

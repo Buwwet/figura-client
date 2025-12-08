@@ -11,7 +11,7 @@
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"icon": "assets/figura-client/icon.png",
+	"icon": "assets/figura_client/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"client": [

@@ -3,8 +3,7 @@ package org.figuramc.figura_client.vanilla_model.models;
 import net.minecraft.client.model.PlayerCapeModel;
 import net.minecraft.client.renderer.entity.layers.CapeLayer;
 import net.minecraft.client.renderer.entity.layers.WingsLayer;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.client.renderer.entity.state.PlayerRenderState;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import org.figuramc.figura_client.vanilla_model.VanillaPartImpl;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaPart;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.vanilla_models.PlayerModel;
@@ -20,7 +19,7 @@ public class PlayerModelImpl implements PlayerModel {
             cape
     ;
 
-    public PlayerModelImpl(PlayerRenderer playerRenderer) {
+    public PlayerModelImpl(AvatarRenderer<?> playerRenderer) {
         this.humanoid = new HumanoidModelImpl(playerRenderer.getModel());
         this.elytra = new ElytraModelImpl(VanillaPartImpl.getRenderLayer(playerRenderer, WingsLayer.class).elytraModel);
         this.jacket = new VanillaPartImpl(playerRenderer.getModel().jacket, humanoid.body);
@@ -29,7 +28,7 @@ public class PlayerModelImpl implements PlayerModel {
         this.left_pants = new VanillaPartImpl(playerRenderer.getModel().leftPants, humanoid.left_leg);
         this.right_pants = new VanillaPartImpl(playerRenderer.getModel().rightPants, humanoid.right_leg);
 
-        this.cape = new VanillaPartImpl(((PlayerCapeModel<PlayerRenderState>) (VanillaPartImpl.getRenderLayer(playerRenderer, CapeLayer.class).model)).cape, humanoid.body);
+        this.cape = new VanillaPartImpl(((PlayerCapeModel) (VanillaPartImpl.getRenderLayer(playerRenderer, CapeLayer.class).model)).cape, humanoid.body);
     }
 
     @Override public @Nullable VanillaPart jacket() { return jacket; }

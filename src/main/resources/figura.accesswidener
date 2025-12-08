@@ -1,24 +1,33 @@
 accessWidener v2 named
 
-# Getting values from LivingEntityRenderer
+# Entity rendering
 accessible method net/minecraft/client/renderer/entity/LivingEntityRenderer getWhiteOverlayProgress (Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;)F
 accessible field net/minecraft/client/renderer/entity/LivingEntityRenderer layers Ljava/util/List;
+accessible method net/minecraft/client/renderer/entity/LivingEntityRenderer setupRotations (Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;FF)V
+accessible method net/minecraft/client/renderer/entity/LivingEntityRenderer scale (Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V
 
-# Get transform of item model, to use as fallback
+# Item rendering
 accessible field net/minecraft/client/renderer/item/ItemStackRenderState$LayerRenderState transform Lnet/minecraft/client/renderer/block/model/ItemTransform;
+accessible field net/minecraft/client/renderer/item/ItemStackRenderState layers [Lnet/minecraft/client/renderer/item/ItemStackRenderState$LayerRenderState;
 
-# Various entity model fields
+# Entity models
 accessible field net/minecraft/client/renderer/entity/layers/WingsLayer elytraModel Lnet/minecraft/client/model/ElytraModel;
 accessible field net/minecraft/client/renderer/entity/layers/CapeLayer model Lnet/minecraft/client/model/HumanoidModel;
 accessible field net/minecraft/client/model/PlayerCapeModel cape Lnet/minecraft/client/model/geom/ModelPart;
 
 # Text rendering
-accessible method net/minecraft/client/gui/Font getFontSet (Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/client/gui/font/FontSet;
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph u0 F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph u1 F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph v0 F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph v1 F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph left F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph right F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph up F
-accessible field net/minecraft/client/gui/font/glyphs/BakedGlyph down F
+extendable class net/minecraft/network/chat/Style
+accessible method net/minecraft/network/chat/Style <init> (Lnet/minecraft/network/chat/TextColor;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lnet/minecraft/network/chat/ClickEvent;Lnet/minecraft/network/chat/HoverEvent;Ljava/lang/String;Lnet/minecraft/network/chat/FontDescription;)V
+accessible method net/minecraft/client/gui/Font getGlyphSource (Lnet/minecraft/network/chat/FontDescription;)Lnet/minecraft/client/gui/GlyphSource;
+accessible field net/minecraft/client/gui/Font provider Lnet/minecraft/client/gui/Font$Provider;
+accessible field net/minecraft/client/gui/Font random Lnet/minecraft/util/RandomSource;
+
+# General rendering
+accessible field com/mojang/blaze3d/opengl/GlBuffer handle I
+accessible method com/mojang/blaze3d/opengl/GlBuffer <init> (Ljava/util/function/Supplier;Lcom/mojang/blaze3d/opengl/DirectStateAccess;IIILjava/nio/ByteBuffer;)V
+accessible method com/mojang/blaze3d/opengl/DirectStateAccess createBuffer ()I
+accessible method com/mojang/blaze3d/opengl/DirectStateAccess bufferStorage (IJI)V
+accessible field net/minecraft/client/renderer/texture/OverlayTexture texture Lnet/minecraft/client/renderer/texture/DynamicTexture;
+accessible method com/mojang/blaze3d/vertex/VertexFormat <init> (Ljava/util/List;Ljava/util/List;Lit/unimi/dsi/fastutil/ints/IntList;I)V
+accessible field com/mojang/blaze3d/pipeline/RenderPipeline$Builder definesBuilder Ljava/util/Optional;
+accessible field net/minecraft/client/renderer/GameRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;

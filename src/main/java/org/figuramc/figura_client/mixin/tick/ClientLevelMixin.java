@@ -1,4 +1,4 @@
-package org.figuramc.figura_client.mixin.entity_tick;
+package org.figuramc.figura_client.mixin.tick;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
@@ -31,12 +31,13 @@ public class ClientLevelMixin {
 
     @Unique
     private static void callTickMethod(Entity entity) {
-        try (AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity))) {
-            if (avatar == null) return;
-            EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity));
-            try { avatar.get().runEvent(Event.ENTITY_TICK, entityView); }
-            finally { entityView.revoke(); }
-        }
+        AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
+        if (avatar == null) return;
+        avatar.use(a -> {
+            try (EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity))) {
+                a.getEventListener(Event.ENTITY_TICK).invoke(entityView);
+            }
+        });
     }
 
 }

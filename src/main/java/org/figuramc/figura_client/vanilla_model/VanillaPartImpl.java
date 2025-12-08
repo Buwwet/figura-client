@@ -3,11 +3,9 @@ package org.figuramc.figura_client.vanilla_model;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import org.figuramc.figura_client.ducks.ModelPartTrackingAccess;
+import org.figuramc.figura_client.ducks.ModelPartAccess;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaPart;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +14,7 @@ public class VanillaPartImpl extends VanillaPart {
     private final @Nullable VanillaPart parent;
 
     public VanillaPartImpl(ModelPart minecraftPart, @Nullable VanillaPart parent) {
-        ((ModelPartTrackingAccess) (Object) minecraftPart).figura_client$setVanillaPart(this); // Set the vanilla part
+        ((ModelPartAccess) (Object) minecraftPart).figura_client$setVanillaPart(this); // Set the vanilla part
         this.parent = parent;
     }
 

@@ -8,29 +8,25 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * We add new fields to EntityRenderState through a mixin.
+ * We add new fields to LevelRenderState through a mixin.
  * Accessor is used to get/set those fields.
  */
-public interface EntityRenderStateAccess {
+public interface LevelRenderStateAccess {
 
-    @Nullable AvatarView<UUID> figura_client$getAvatarView();
-    void figura_client$setAvatarView(@Nullable AvatarView<UUID> view);
-
-    @Nullable FiguraPartSubmit figura_client$getPartSubmit();
-    void figura_client$setPartSubmit(@Nullable FiguraPartSubmit submit);
+//    @Nullable FiguraPartSubmit figura_client$getPartSubmit();
+//    void figura_client$setPartSubmit(@Nullable FiguraPartSubmit submit);
 
     @Nullable FiguraCallbackSubmit figura_client$getCodeSubmit();
     void figura_client$setCodeSubmit(@Nullable FiguraCallbackSubmit submit);
 
     // Reset to defaults
     default void figura_client$reset() {
-        figura_client$setAvatarView(null);
-        figura_client$setPartSubmit(null);
+//        figura_client$setPartSubmit(null);
         figura_client$setCodeSubmit(null);
     }
 
     default boolean isDefault() {
-        return figura_client$getAvatarView() != null;
+        return figura_client$getCodeSubmit() != null;
     }
 
 }

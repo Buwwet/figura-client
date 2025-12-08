@@ -6,15 +6,17 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
+import org.figuramc.figura_client.renderer.part.vanilla_optimized.OptimizedRenderer;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
-import org.figuramc.figura_core.data.ModuleImporter;
-import org.figuramc.figura_core.data.ModuleMaterials;
+import org.figuramc.figura_core.data.importer.v1.ModuleImporter;
+import org.figuramc.figura_core.data.materials.ModuleMaterials;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
@@ -35,12 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FiguraClient implements ClientModInitializer {
 
-	// Stack of views of currently-rendering avatars.
-	// Do not worry about close()-ing the view when you peek this stack;
-	// the person who pushed the view is responsible for closing it.
-	public static final NullEmptyStack<AvatarView<?>> AVATAR_RENDERING_STACK = new NullEmptyStack<>();
-	public static final NullEmptyStack<Boolean> IS_LIVING_ENTITY_STACK = new NullEmptyStack<>(); // TODO look for a maybe better way to do this?
-
 	// Maps for important objects
 	public static final Map<EntityType<?>, EntityKind> ENTITY_KINDS = new ConcurrentHashMap<>();
 	public static final EnumMap<ItemDisplayContext, ItemRenderContext> RENDER_CONTEXTS = new EnumMap<>(ItemDisplayContext.class);
@@ -54,6 +50,7 @@ public class FiguraClient implements ClientModInitializer {
 		RENDER_CONTEXTS.put(ItemDisplayContext.GUI, new ItemRenderContext("gui", false, true, null));
 		RENDER_CONTEXTS.put(ItemDisplayContext.GROUND, new ItemRenderContext("ground", false, true, null));
 		RENDER_CONTEXTS.put(ItemDisplayContext.FIXED, new ItemRenderContext("fixed", false, true, null));
+		RENDER_CONTEXTS.put(ItemDisplayContext.ON_SHELF, new ItemRenderContext("on_shelf", false, false, null));
 	}
 
 	// Mod ID
@@ -64,21 +61,27 @@ public class FiguraClient implements ClientModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+	public static ResourceLocation locate(String path) {
+		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+	}
+
 	@Override
 	public void onInitializeClient() {
 		// Initialize Figura connection point
 		FiguraConnectionPoint.TEXTURE_PROVIDER = new TextureProviderImpl();
+		FiguraConnectionPoint.PART_RENDERER_FACTORY = OptimizedRenderer::new;
 		FiguraConnectionPoint.GAME_DATA_PROVIDER = new GameDataProviderImpl();
 		FiguraConnectionPoint.ERROR_REPORTER = new ErrorReporterImpl();
 		FiguraConnectionPoint.PATH_PROVIDER = new PathProviderImpl();
 		FiguraConnectionPoint.finishInit();
 
+		KeyMapping.Category category = KeyMapping.Category.register(locate("debug"));
 		// This is just for debug testing! We'll move away from using fabric api at a later time.
 		KeyMapping debugLoadAvatar = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.figura.debug_load_avatar",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_0,
-				"category.figura.debug"
+				category
 		));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (debugLoadAvatar.consumeClick()) {

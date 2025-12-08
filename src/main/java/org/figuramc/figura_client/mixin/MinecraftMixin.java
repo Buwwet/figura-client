@@ -19,7 +19,7 @@ public class MinecraftMixin {
         AvatarManagers.pollAll();
         AvatarManagers.forEachAvatar(avatar -> {
             avatar.tick();
-            avatar.runEvent(Event.CLIENT_TICK, CallbackItem.Unit.INSTANCE);
+            avatar.getEventListener(Event.CLIENT_TICK).invoke(CallbackItem.Unit.INSTANCE);
         });
     }
 

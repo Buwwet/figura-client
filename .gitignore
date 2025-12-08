@@ -1,5 +1,6 @@
 .profileconfig.json
 profile.jfr
+lib/
 
 # Gradle
 

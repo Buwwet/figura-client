@@ -1,8 +1,7 @@
-package org.figuramc.figura_client.mixin.general_render;
+package org.figuramc.figura_client.mixin.render;
 
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
@@ -16,16 +15,20 @@ import net.minecraft.client.renderer.CachedOrthoProjectionMatrixBuffer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.Entity;
-import org.figuramc.figura_client.renderer.CompatibleRenderer2;
-import org.figuramc.figura_core.avatars.Avatar;
+import org.figuramc.figura_client.ducks.LevelRenderStateAccess;
+import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
+import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_core.avatars.components.HudRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
+import org.figuramc.figura_core.script_hooks.callback.items.FuncView;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
@@ -43,28 +46,55 @@ import java.util.List;
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 
-    @Shadow @Final private Camera mainCamera;
+    @Shadow @Final private LevelRenderState levelRenderState;
 
-    @Shadow @Final private Lighting lighting;
+    @Unique private FiguraCallbackSubmit clientRenderSubmissions;
 
     // Run client_render just before pick().
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/renderer/GameRenderer;pick(F)V"))
     public void client_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the client_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        AvatarManagers.forEachAvatar(avatar -> {
-            avatar.runEvent(Event.CLIENT_RENDER, new CallbackItem.F32(tickDelta));
-        });
+        clientRenderSubmissions = invokeRenderEvent(Event.CLIENT_RENDER, new CallbackItem.F32(tickDelta));
     }
 
     // Run world_render just before LevelRenderer.renderLevel().
-    @Inject(method = "renderLevel", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V"))
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V"))
     public void world_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the world_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        AvatarManagers.forEachAvatar(avatar -> {
-            avatar.runEvent(Event.WORLD_RENDER, new CallbackItem.F32(tickDelta));
+        FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEvent(Event.WORLD_RENDER, new CallbackItem.F32(tickDelta));
+
+        // Store submissions in the LevelRenderState for later
+        FiguraCallbackSubmit clientRenderSubmissions = this.clientRenderSubmissions; // Capture
+        ((LevelRenderStateAccess) this.levelRenderState).figura_client$setCodeSubmit(() -> {
+            clientRenderSubmissions.run();
+            worldRenderSubmissions.run();
         });
+    }
+
+    // Helper for invoking all render events, having them return callbacks to happen on the render thread
+    @Unique private static <Args extends CallbackItem> FiguraCallbackSubmit invokeRenderEvent(Event<Args, CallbackItem.Tuple2<CallbackItem.Optional<FuncView<CallbackItem, CallbackItem.Unit>>, CallbackItem>> renderEvent, Args args) {
+        List<Runnable> allCallbacks = new ArrayList<>();
+        AvatarManagers.forEachAvatar(avatar -> {
+            // Invoke the event and get some render-thread callbacks
+            var callbacks = avatar.getEventListener(renderEvent).invokeFor(args);
+            if (callbacks.isEmpty()) return;
+            AvatarView<?> view = new AvatarView<>(avatar);
+            Runnable invokeCallbacks = () -> view.use(renderThreadAvatar -> {
+                // Run all the callbacks for this avatar:
+                for (var callback : callbacks) {
+                    var funcView = callback.a().value();
+                    if (funcView == null) continue;
+                    var data = callback.b();
+                    var func = funcView.getCallback();
+                    if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
+                    func.call(data);
+                }
+            });
+            allCallbacks.add(invokeCallbacks);
+        });
+        return () -> allCallbacks.forEach(Runnable::run);
     }
 
     // GPU resources we'll need to close
@@ -98,37 +128,32 @@ public class GameRendererMixin {
         // Set up lighting
         RenderSystem.setShaderLights(figuraGuiLightingBuffer.slice());
 
-
         // Collect avatars to render the huds of
         List<AvatarView<?>> toRender = new ArrayList<>();
-        try {
-            AvatarView<?> mainHud = AvatarManagers.GUIS.get(AvatarManagers.GuiKind.MAIN_GUI);
-            if (mainHud != null) toRender.add(mainHud);
-            Entity e = Minecraft.getInstance().getCameraEntity();
-            if (e != null) {
-                AvatarView<?> cameraEntityHud = AvatarManagers.ENTITIES.get(e.getUUID());
-                if (cameraEntityHud != null) toRender.add(cameraEntityHud);
-            }
-            // Render the HUDs of each avatar in the list
-            for (AvatarView<?> avatarView : toRender) {
-                Avatar<?> avatar = avatarView.get();
+        AvatarView<?> mainHud = AvatarManagers.GUIS.get(AvatarManagers.GuiKind.MAIN_GUI);
+        if (mainHud != null) toRender.add(mainHud);
+        Entity e = Minecraft.getInstance().getCameraEntity();
+        if (e != null) {
+            AvatarView<?> cameraEntityHud = AvatarManagers.ENTITIES.get(e.getUUID());
+            if (cameraEntityHud != null) toRender.add(cameraEntityHud);
+        }
+
+        // Render hud for each avatar in the list
+        for (AvatarView<?> avatarView : toRender) {
+            avatarView.use(avatar -> {
                 HudRoot hudRoot = avatar.getComponent(HudRoot.TYPE);
-                if (hudRoot == null) continue;
+                if (hudRoot == null) return;
                 avatar.tryRenderModelPart(() -> {
-                    if (hudRoot.root.clientState == null) hudRoot.root.clientState = new CompatibleRenderer2(hudRoot.root);
-                    if (hudRoot.root.clientState instanceof CompatibleRenderer2 renderer) {
-                        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-                        FiguraTransformStack stack = new FiguraTransformStack();
-                        stack.scale(-1.0f, -1.0f, 1.0f); // Flip X and Y axis
+                    FiguraClientPartRenderer renderer = (FiguraClientPartRenderer) hudRoot.root.getRenderer();
+                    MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+                    FiguraTransformStack stack = new FiguraTransformStack();
+                    stack.light(new Vector2f(1f, 1f));
+                    stack.scale(-1.0f, -1.0f, 1.0f); // Flip X and Y axis
 //                        float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
-                        renderer.render(bufferSource, stack, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
-                        bufferSource.endBatch(); // Ensure we end the batch
-                    }
+                    renderer.render(bufferSource, stack, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                    bufferSource.endBatch(); // Ensure we end the batch
                 });
-            }
-        } finally {
-            // Remember to close views
-            toRender.forEach(AvatarView::close);
+            });
         }
     }
 

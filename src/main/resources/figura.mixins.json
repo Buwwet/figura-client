@@ -10,16 +10,19 @@
   },
   "client": [
     "MinecraftMixin",
-    "entity_render.EntityRenderDispatcherMixin",
-    "entity_render.EntityRendererMixin",
-    "entity_render.EntityRenderStateMixin",
-    "entity_render.LivingEntityRendererMixin",
-    "entity_tick.ClientLevelMixin",
     "fix.ObfuscationPerformanceFix",
-    "general_render.GameRendererMixin",
-    "general_render.RenderSystemMixin",
-    "item_render.ItemModelResolverMixin",
-    "item_render.ItemStackRenderStateMixin",
-    "vanilla_parts.ModelPartMixin"
+    "render.GameRendererMixin",
+    "render.LevelRendererMixin",
+    "render.LevelRenderStateMixin",
+    "render.RenderSystemMixin",
+    "render.entity.EntityRenderDispatcherMixin",
+    "render.entity.EntityRenderStateMixin",
+    "render.item.ItemModelResolverMixin",
+    "render.item.ItemStackRenderStateMixin",
+    "render.model.ModelFeatureRendererMixin",
+    "render.model.ModelPartMixin",
+    "render.model.ModelSubmitMixin",
+    "render.model.OldModelPartMixin",
+    "tick.ClientLevelMixin"
   ]
 }
