@@ -2,7 +2,7 @@ package org.figuramc.figura_client.game_data;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura_client.FiguraClient;
@@ -19,7 +19,7 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
     @Override
     public EntityKind getKind() {
         return FiguraClient.ENTITY_KINDS.computeIfAbsent(entity.getType(), ty -> {
-            ResourceLocation loc = BuiltInRegistries.ENTITY_TYPE.getKey(ty);
+            Identifier loc = BuiltInRegistries.ENTITY_TYPE.getKey(ty);
             return new EntityKind(loc.getNamespace(), loc.getPath());
         });
     }

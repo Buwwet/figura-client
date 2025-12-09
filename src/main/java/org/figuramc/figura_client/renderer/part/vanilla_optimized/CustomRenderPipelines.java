@@ -4,13 +4,14 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.Util;
 import net.minecraft.client.renderer.ShaderDefines;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_core.model.rendering.shader.BuiltinShader;
 import org.figuramc.figura_core.model.rendering.shader.ExtensionShader;
 import org.figuramc.figura_core.model.rendering.shader.FiguraShader;
+import org.figuramc.figura_core.model.rendering.shader.ShaderHookPoint;
 import org.figuramc.figura_core.model.rendering.vertex.FiguraVertexFormat;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
@@ -50,15 +51,7 @@ public class CustomRenderPipelines {
     // Get a RenderPipeline from a builtin shader. Uses default hooks.
     private static RenderPipeline.Builder createBase(BuiltinShader figuraShader) {
         return switch (figuraShader) {
-            case BASIC -> withDefines(RenderPipeline.builder(BASIC_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_basic")), Map.of(
-                    "FIGURA_HOOKS", """
-                            void figura_part_space_hook(inout vec3 pos, inout vec3 normal, inout vec3 tangent) {
-                                /* pos += normal; */
-                            }
-                            void figura_model_space_hook(inout vec4 pos, inout vec3 normal, inout vec3 tangent, inout vec4 color, inout vec2 lightUV) {
-                                /* pos.x += pos.y * sin(GameTime * 1000.0 + pos.y) / 20.0; */
-                            }
-                            """));
+            case BASIC -> withHooks(RenderPipeline.builder(BASIC_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_basic")), Map.of()); // Default hooks
             default -> throw new UnsupportedOperationException("TODO");
         };
     }
@@ -70,8 +63,18 @@ public class CustomRenderPipelines {
         // Add only the *additional* texture binding points to the builder
         for (int i = extensionShader.base.textureBindingPoints.size(); i < extensionShader.textureBindingPoints.size(); i++)
             builder.withSampler(extensionShader.textureBindingPoints.get(i));
-        // Return.
-        return builder;
+        // Add our custom hooks
+        return withHooks(builder, extensionShader.hookImplementations);
+    }
+
+    private static RenderPipeline.Builder withHooks(RenderPipeline.Builder builder, Map<ShaderHookPoint, @Nullable String> hookImplementations) {
+        StringBuilder allHooks = new StringBuilder();
+        for (ShaderHookPoint hookPoint : ShaderHookPoint.values(ShaderHookPoint.class)) {
+            String impl = hookImplementations.get(hookPoint);
+            if (impl == null) impl = hookPoint.defaultImpl;
+            allHooks.append(impl).append("\n");
+        }
+        return withDefines(builder, Map.of("FIGURA_HOOKS", allHooks.toString()));
     }
 
     // Helper for adding string-based defines nicely.

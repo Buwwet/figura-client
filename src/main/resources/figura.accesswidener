@@ -11,9 +11,9 @@ accessible field net/minecraft/client/renderer/item/ItemStackRenderState$LayerRe
 accessible field net/minecraft/client/renderer/item/ItemStackRenderState layers [Lnet/minecraft/client/renderer/item/ItemStackRenderState$LayerRenderState;
 
 # Entity models
-accessible field net/minecraft/client/renderer/entity/layers/WingsLayer elytraModel Lnet/minecraft/client/model/ElytraModel;
+accessible field net/minecraft/client/renderer/entity/layers/WingsLayer elytraModel Lnet/minecraft/client/model/object/equipment/ElytraModel;
 accessible field net/minecraft/client/renderer/entity/layers/CapeLayer model Lnet/minecraft/client/model/HumanoidModel;
-accessible field net/minecraft/client/model/PlayerCapeModel cape Lnet/minecraft/client/model/geom/ModelPart;
+accessible field net/minecraft/client/model/player/PlayerCapeModel cape Lnet/minecraft/client/model/geom/ModelPart;
 
 # Text rendering
 extendable class net/minecraft/network/chat/Style
@@ -24,10 +24,6 @@ accessible field net/minecraft/client/gui/Font random Lnet/minecraft/util/Random
 
 # General rendering
 accessible field com/mojang/blaze3d/opengl/GlBuffer handle I
-accessible method com/mojang/blaze3d/opengl/GlBuffer <init> (Ljava/util/function/Supplier;Lcom/mojang/blaze3d/opengl/DirectStateAccess;IIILjava/nio/ByteBuffer;)V
-accessible method com/mojang/blaze3d/opengl/DirectStateAccess createBuffer ()I
-accessible method com/mojang/blaze3d/opengl/DirectStateAccess bufferStorage (IJI)V
-accessible field net/minecraft/client/renderer/texture/OverlayTexture texture Lnet/minecraft/client/renderer/texture/DynamicTexture;
 accessible method com/mojang/blaze3d/vertex/VertexFormat <init> (Ljava/util/List;Ljava/util/List;Lit/unimi/dsi/fastutil/ints/IntList;I)V
 accessible field com/mojang/blaze3d/pipeline/RenderPipeline$Builder definesBuilder Ljava/util/Optional;
-accessible field net/minecraft/client/renderer/GameRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+accessible method net/minecraft/client/renderer/rendertype/RenderType create (Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;

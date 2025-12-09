@@ -1,6 +1,6 @@
 package org.figuramc.figura_client.vanilla_model.models;
 
-import net.minecraft.client.model.PlayerCapeModel;
+import net.minecraft.client.model.player.PlayerCapeModel;
 import net.minecraft.client.renderer.entity.layers.CapeLayer;
 import net.minecraft.client.renderer.entity.layers.WingsLayer;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;

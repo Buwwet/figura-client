@@ -7,6 +7,8 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.SamplerCache;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -76,7 +78,7 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
         if (!root.builtVertexData.isEmpty()) {
             // Set up shared buffers
             GpuBuffer transformsBuffer = RenderSystem.getDevice().createBuffer(
-                    () -> "Figura Transforms Buffer", GpuBuffer.USAGE_MAP_WRITE, root.transformCount * PartDataStruct.GPU_SIZE);
+                    () -> "Figura Transforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) root.transformCount * PartDataStruct.GPU_SIZE);
             GpuBuffer figuraUniformsBuffer = RenderSystem.getDevice().createBuffer(
                     () -> "Figura Uniforms Buffer", GpuBuffer.USAGE_MAP_WRITE, FIGURA_UNIFORMS_SIZE);
             // Generate draw call infos
@@ -183,22 +185,22 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                 var main_handle = main_binding == null ? null : main_binding.textureHandle();
                 var main_gpuTex = RenderUtils.texToGpuTextureView(main_handle);
                 var main_tex = main_gpuTex == null ? RenderUtils.ZERO_PIXEL.getTextureView() : main_gpuTex;
-                pass.bindSampler("Main", main_tex);
+                pass.bindTexture("Main", main_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
                 var normal_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 1);
                 var normal_handle = normal_binding == null ? null : normal_binding.textureHandle();
                 var normal_gpuTex = RenderUtils.texToGpuTextureView(normal_handle);
                 var normal_tex = normal_gpuTex == null ? RenderUtils.DEFAULT_NORMAL_MAP.getTextureView() : normal_gpuTex;
-                pass.bindSampler("NormalMap", normal_tex);
+                pass.bindTexture("NormalMap", normal_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
                 var specular_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 2);
                 var specular_handle = specular_binding == null ? null : specular_binding.textureHandle();
                 var specular_gpuTex = RenderUtils.texToGpuTextureView(specular_handle);
                 var specular_tex = specular_gpuTex == null ? RenderUtils.ZERO_PIXEL.getTextureView() : specular_gpuTex;
-                pass.bindSampler("SpecularMap", specular_tex);
+                pass.bindTexture("SpecularMap", specular_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
                 var lightmap_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 3);
                 var lightmap_handle = lightmap_binding == null ? null : lightmap_binding.textureHandle();
                 var lightmap_gpuTex = RenderUtils.texToGpuTextureView(lightmap_handle);
                 var lightmap_tex = lightmap_gpuTex == null ? Minecraft.getInstance().gameRenderer.lightTexture().getTextureView() : lightmap_gpuTex;
-                pass.bindSampler("LightMap", lightmap_tex);
+                pass.bindTexture("LightMap", lightmap_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR)); // Linear filter on lightmap for smooth lighting
 
                 // TODO: Add workaround for if SSBO isn't supported (or we're somehow not using OpenGL backend?)
                 GL46.glBindBufferBase(GL46.GL_SHADER_STORAGE_BUFFER, 0, ((GlBuffer) state.transformsBuffer).handle);

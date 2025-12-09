@@ -7,8 +7,9 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.TextureFormat;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.minecraft_interop.texture.OwnedMinecraftTexture;
@@ -26,13 +27,13 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
     private static final AtomicLong nextID = new AtomicLong();
 
     private final int width, height;
-    public final ResourceLocation location;
+    public final Identifier location;
     private NativeImage backingTexture;
 
     // Create blank texture from width/height
     public OwnedMinecraftTextureImpl(int width, int height) {
         String name = "figura_texture_" + nextID.getAndIncrement();
-        this.location = ResourceLocation.fromNamespaceAndPath(FiguraClient.MOD_ID, name);
+        this.location = Identifier.fromNamespaceAndPath(FiguraClient.MOD_ID, name);
         this.backingTexture = new NativeImage(width, height, true); // Boolean param = whether to zero it, which we will
         this.width = width;
         this.height = height;
@@ -41,7 +42,7 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
     // Create texture from PNG
     public OwnedMinecraftTextureImpl(byte[] pngBytes) throws IOException {
         String name = "figura_texture_" + nextID.getAndIncrement();
-        this.location = ResourceLocation.fromNamespaceAndPath(FiguraClient.MOD_ID, name);
+        this.location = Identifier.fromNamespaceAndPath(FiguraClient.MOD_ID, name);
         this.backingTexture = NativeImage.read(pngBytes);
         this.width = backingTexture.getWidth();
         this.height = backingTexture.getHeight();
@@ -77,7 +78,6 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
             GpuDevice gpuDevice = RenderSystem.getDevice();
             int usage = GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_RENDER_ATTACHMENT;
             this.texture = gpuDevice.createTexture(location.getPath(), usage, TextureFormat.RGBA8, width, height, 1, 1);
-            this.texture.setTextureFilter(FilterMode.NEAREST, false);
             gpuDevice.createCommandEncoder().clearColorTexture(this.texture, 0); // Clear to zeros
             this.textureView = gpuDevice.createTextureView(this.texture);
             // Register this to the texture manager

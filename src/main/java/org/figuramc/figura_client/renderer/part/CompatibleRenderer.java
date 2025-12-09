@@ -3,16 +3,13 @@ package org.figuramc.figura_client.renderer.part;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.TheEndPortalRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import org.figuramc.figura_client.renderer.part.text_rendering.FiguraTextRenderer;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.avatars.AvatarError;
-import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
 import org.figuramc.figura_core.model.part.tasks.TextTask;
-import org.figuramc.figura_core.model.rendering.FiguraRenderType;
 import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.figuramc.figura_core.model.rendering.shader.BuiltinShader;
 import org.figuramc.figura_core.model.rendering.shader.FiguraShader;
@@ -27,11 +24,13 @@ import org.joml.Vector4f;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * This object is stored as state on a RenderingRoot.
  */
+
+// TODO: This entire class is outdated!! It uses the outdated concept of "emissive texture" which we're changing.
+//       Remake it all at some point; for now we're using OptimizedRenderer!
 public class CompatibleRenderer extends FiguraClientPartRenderer {
 
     // Helpful cached info about converting from FiguraRenderType -> minecraft RenderTypes
@@ -68,12 +67,10 @@ public class CompatibleRenderer extends FiguraClientPartRenderer {
                 //       Users should achieve this by annotating the custom textures used here with the ".noatlas.png" flag
 
                 var pipeline = (shader == BuiltinShader.END_PORTAL) ? RenderPipelines.END_PORTAL : RenderPipelines.END_GATEWAY;
-                var renderType = RenderType.create("<Custom Figura RenderType>", 1536, pipeline, RenderType.CompositeState.builder()
-                                .setTextureState(RenderStateShard.MultiTextureStateShard.builder()
-                                        .add(loc1, false)
-                                        .add(loc2, false)
-                                        .build())
-                        .createCompositeState(true));
+                var renderType = RenderType.create("<Custom Figura RenderType>", RenderSetup.builder(pipeline)
+                        .withTexture("Sampler0", loc1)
+                        .withTexture("Sampler1", loc2)
+                        .createRenderSetup());
                 minecraftRenderTypeUsages.add(new MinecraftRenderTypeUsage(renderType, uv1));
             } else if (shader == BuiltinShader.BASIC) {
                 // Textures
@@ -84,15 +81,19 @@ public class CompatibleRenderer extends FiguraClientPartRenderer {
                 var emissiveLoc = emissiveTex != null ? RenderUtils.texToLocation(emissiveTex.textureHandle(), RenderUtils.ZERO_PIXEL_LOC) : RenderUtils.ZERO_PIXEL_LOC;
                 var emissiveUV = emissiveTex != null ? emissiveTex.uvModifier() : null;
                 // Render types
-                var mainRenderType = RenderType.create("<Custom Figura RenderType>", 1536, RenderPipelines.ENTITY_TRANSLUCENT, RenderType.CompositeState.builder()
-                                .setTextureState(new RenderStateShard.TextureStateShard(mainLoc, false))
-                                .setLightmapState(RenderStateShard.LIGHTMAP)
-                                .setOverlayState(RenderStateShard.OVERLAY)
-                        .createCompositeState(true));
+                var mainRenderType = RenderType.create("<Custom Figura RenderType>", RenderSetup.builder(RenderPipelines.ENTITY_TRANSLUCENT)
+                        .withTexture("Sampler0", mainLoc)
+                        .useLightmap()
+                        .useOverlay()
+                        .affectsCrumbling()
+                        .sortOnUpload()
+                        .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                        .createRenderSetup());
                 minecraftRenderTypeUsages.add(new MinecraftRenderTypeUsage(mainRenderType, mainUV));
-                var emissiveRenderType = RenderType.create("<Custom Figura RenderType>", 1536, RenderPipelines.EYES, RenderType.CompositeState.builder()
-                        .setTextureState(new RenderStateShard.TextureStateShard(emissiveLoc, false))
-                        .createCompositeState(true));
+                var emissiveRenderType = RenderType.create("<Custom Figura RenderType>",RenderSetup.builder(RenderPipelines.EYES)
+                        .withTexture("Sampler0", emissiveLoc)
+                        .sortOnUpload()
+                        .createRenderSetup());
                 minecraftRenderTypeUsages.add(new MinecraftRenderTypeUsage(emissiveRenderType, emissiveUV));
             } else {
                 throw new UnsupportedOperationException("Non-builtin shaders for compatible render mode: TODO figure this out");

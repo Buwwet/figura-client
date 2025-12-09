@@ -9,7 +9,7 @@ public class ElytraModelImpl implements ElytraModel {
 
     protected final VanillaPartImpl left_wing, right_wing;
 
-    public ElytraModelImpl(net.minecraft.client.model.ElytraModel model) {
+    public ElytraModelImpl(net.minecraft.client.model.object.equipment.ElytraModel model) {
         this.left_wing = new VanillaPartImpl(model.root().getChild("left_wing"), null);
         this.right_wing = new VanillaPartImpl(model.root().getChild("right_wing"), null);
     }

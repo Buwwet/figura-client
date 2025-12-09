@@ -24,8 +24,8 @@ public class MinecraftMixin {
     }
 
     // Clear avatars when leaving the level. TODO come up with a cleaner way?
-    @Inject(method = "updateLevelInEngines", at = @At("HEAD"))
-    private void clearLevelHook(ClientLevel clientLevel, CallbackInfo ci) {
+    @Inject(method = "updateLevelInEngines(Lnet/minecraft/client/multiplayer/ClientLevel;Z)V", at = @At("HEAD"))
+    private void clearLevelHook(ClientLevel clientLevel, boolean stopSounds, CallbackInfo ci) {
         if (clientLevel == null) {
             AvatarManagers.ENTITIES.clear();
             AvatarManagers.GUIS.clear();

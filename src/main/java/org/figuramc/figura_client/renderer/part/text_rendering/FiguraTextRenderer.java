@@ -8,7 +8,7 @@ import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.font.glyphs.EffectGlyph;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.FontDescription;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.figuramc.figura_core.text.FormattedText;
@@ -65,7 +65,7 @@ public class FiguraTextRenderer {
      */
     private int processChars(FormattedText text, int charIndex) {
         // TODO make font configurable? Wouldn't be controllable by molang since it's not a float, though :/
-        glyphSource = font.getGlyphSource(new FontDescription.Resource(ResourceLocation.parse("minecraft:default")));
+        glyphSource = font.getGlyphSource(new FontDescription.Resource(Identifier.parse("minecraft:default")));
         effectGlyph = font.provider.effect();
         style = text.style;
         // Process codepoints

@@ -4,8 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.manage.AvatarView;
@@ -23,7 +24,7 @@ public record FiguraPartSubmit(
 
     // Dummy render type to ensure the Figura part submissions happen without interrupting existing render types
     // This solution kinda sucks but it's at least not too invasive with mixins
-    public static final RenderType DUMMY_RENDER_TYPE = RenderType.entitySolid(RenderUtils.ZERO_PIXEL_LOC);
+    public static final RenderType DUMMY_RENDER_TYPE = RenderTypes.entitySolid(RenderUtils.ZERO_PIXEL_LOC);
 
     @Override
     public void render(PoseStack.Pose pose, VertexConsumer vertexConsumer) {
@@ -36,7 +37,7 @@ public record FiguraPartSubmit(
                 stack.peekPosition().set(pose.pose());
                 stack.peekNormal().set(pose.normal());
                 stack.multiply(rootMatrix);
-                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().gameRenderer.renderBuffers.bufferSource();
+                MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
                 partRenderer.render(bufferSource, stack, light, overlay);
             }));
         }
