@@ -19,12 +19,12 @@ import java.util.UUID;
 @Mixin(ClientLevel.class)
 public class ClientLevelMixin {
 
-    @Inject(method = "tickNonPassenger", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;tick()V"))
+    @Inject(method = "tickNonPassenger", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;tick()V", shift = At.Shift.AFTER))
     public void afterTick(Entity entity, CallbackInfo ci) {
         callTickMethod(entity);
     }
 
-    @Inject(method = "tickPassenger", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;rideTick()V"))
+    @Inject(method = "tickPassenger", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;rideTick()V", shift = At.Shift.AFTER))
     public void afterRideTick(Entity vehicle, Entity rider, CallbackInfo ci) {
         callTickMethod(rider);
     }
@@ -39,5 +39,4 @@ public class ClientLevelMixin {
             }
         });
     }
-
 }
