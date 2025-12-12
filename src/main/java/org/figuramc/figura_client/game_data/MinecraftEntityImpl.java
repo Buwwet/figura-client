@@ -17,6 +17,7 @@ import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEnti
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -73,32 +74,46 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
     }
 
     // TODO: Derived view
-    @Override
+    @Override @Nullable
     public MinecraftEntity getVehicle() {
-        return new MinecraftEntityImpl(entity.getVehicle());
-        //return new EntityView<>(new MinecraftEntityImpl(entity.getVehicle()));
+        Entity vehicle = entity.getVehicle();
+        if (vehicle != null) {
+            return new MinecraftEntityImpl(vehicle);
+        }
+        return null;
     }
 
-    @Override
+    @Override @Nullable
     public MinecraftEntity getControlledVehicle() {
-        return new MinecraftEntityImpl(entity.getControlledVehicle());
+        Entity vehicle = entity.getControlledVehicle();
+        if (vehicle != null) {
+            return new MinecraftEntityImpl(vehicle);
+        }
+        return null;
     }
 
-    @Override
+    @Override @Nullable
     public List<MinecraftEntity> getPassengers() {
         List<MinecraftEntity> list = new ArrayList<>();
         for (Entity passenger : entity.getPassengers()) {
             list.add(new MinecraftEntityImpl(passenger));
         }
+        if (list.isEmpty()) {
+            return null;
+        }
         return list;
     }
 
-    @Override
+    @Override @Nullable
     public MinecraftEntity getControllingPassenger() {
-        return new MinecraftEntityImpl(entity.getControllingPassenger());
+        Entity passenger = entity.getControllingPassenger();
+        if (passenger != null) {
+            return new MinecraftEntityImpl(passenger);
+        }
+        return null;
     }
 
-    @Override
+    @Override @Nullable
     public Object[] getTargetedEntity(Double distance) {
         if (distance == null) distance = 20d;
         distance = Math.max(Math.min(distance, 20), 0);
@@ -118,7 +133,7 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
         return null;
     }
 
-    @Override
+    @Override @Nullable
     public MinecraftEntity getNearestEntity(String type, Double radius) {
         radius = radius != null ? radius : 20;
 
@@ -126,7 +141,7 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
         if (type != null) {
             Identifier id = Identifier.tryParse(type);
             if (id == null) {
-                // TODO: Still need better error handling.
+                // TODO: Still need better error handling on figura-client.
                 throw new RuntimeException("Invalid entity type: " + type);
             }
             entityType = BuiltInRegistries.ENTITY_TYPE.get(id).get().value();
