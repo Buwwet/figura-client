@@ -69,7 +69,7 @@ public class FiguraClient implements ClientModInitializer {
 		FiguraConnectionPoint.TEXTURE_PROVIDER = new TextureProviderImpl();
 		FiguraConnectionPoint.PART_RENDERER_FACTORY = OptimizedRenderer::new;
 		FiguraConnectionPoint.GAME_DATA_PROVIDER = new GameDataProviderImpl();
-		FiguraConnectionPoint.ERROR_REPORTER = new ErrorReporterImpl();
+		FiguraConnectionPoint.CONSOLE_OUTPUT = new ConsoleOutputImpl();
 		FiguraConnectionPoint.PATH_PROVIDER = new PathProviderImpl();
 		FiguraConnectionPoint.finishInit();
 
