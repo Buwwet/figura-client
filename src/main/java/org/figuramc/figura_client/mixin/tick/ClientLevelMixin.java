@@ -1,12 +1,17 @@
 package org.figuramc.figura_client.mixin.tick;
 
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
+import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
+import org.figuramc.figura_core.script_hooks.callback.CallbackType;
+import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
 import org.figuramc.figura_core.script_hooks.callback.items.EntityView;
+import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,10 +37,16 @@ public class ClientLevelMixin {
     @Unique
     private static void callTickMethod(Entity entity) {
         AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
+
         if (avatar == null) return;
         avatar.use(a -> {
-            try (EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity))) {
-                a.getEventListener(Event.ENTITY_TICK).invoke(entityView);
+            try (
+                    EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity));
+                    WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())
+            ) {
+                a.getEventListener(Event.ENTITY_TICK).invoke(
+                        new CallbackItem.Tuple2<>(entityView, worldView)
+                    );
             }
         });
     }
