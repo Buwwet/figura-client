@@ -8,3 +8,9 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 }
+
+includeBuild("../figura-core") {
+	dependencySubstitution {
+		substitute(module("org.figuramc:figura-core")) using project(":")
+	}
+}
