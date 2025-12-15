@@ -19,6 +19,12 @@ public class ConsoleOutputImpl implements ConsoleOutput {
     }
 
     @Override
+    public void logNativeFormatted(String formatted) {
+        // TODO
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
     public void reportError(FiguraException e) {
         FiguraClient.LOGGER.error("Figura Exception occurred:", e);
     }
