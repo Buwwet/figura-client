@@ -41,7 +41,7 @@ public record MinecraftWorldImpl() implements MinecraftWorld {
     @Override
     public List<MinecraftEntity> getEntities(int x1, int y1, int z1, int x2, int y2, int z2) {
         ArrayList<MinecraftEntity> list = new ArrayList<>();
-        AABB aabb = new AABB(x1, y2, z1, x2, y2, z2);
+        AABB aabb = new AABB(x1, y1, z1, x2, y2, z2);
         // Wrap all entities inside
         for (Entity entity : getLevel().getEntitiesOfClass(Entity.class, aabb)) {
             list.add(new MinecraftEntityImpl(entity));

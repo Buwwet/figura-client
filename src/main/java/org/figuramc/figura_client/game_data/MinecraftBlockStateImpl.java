@@ -1,6 +1,5 @@
 package org.figuramc.figura_client.game_data;
 
-import net.fabricmc.fabric.mixin.content.registry.BlockBehaviourAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -13,13 +12,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.ColorMapColorUtil;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
@@ -40,8 +37,7 @@ import java.util.*;
 public record MinecraftBlockStateImpl(BlockState blockState, BlockPos blockPos) implements MinecraftBlockState {
     @Override
     public String getId() {
-        // TODO Check that it gives minecraft:block_id
-        return blockState.getBlock().getName().toString();
+        return blockState.getBlockHolder().getRegisteredName();
     }
 
     @Override
@@ -165,9 +161,12 @@ public record MinecraftBlockStateImpl(BlockState blockState, BlockPos blockPos) 
     }
 
     @Override
-    public int getComparatorOutput() {
-        ///  TODO: now supports a direction
-        return blockState.getAnalogOutputSignal(getLevel(), blockPos, Direction.DOWN);
+    public int getComparatorOutput(String direction) {
+        Direction dir = Direction.byName(direction);
+        if (dir == null)
+            return 0;
+
+        return blockState.getAnalogOutputSignal(getLevel(), blockPos, dir);
     }
 
     @Override
