@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.renderer.part.vanilla_optimized.OptimizedRenderer;
+import org.figuramc.figura_client.text.ConsoleOutputImpl;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
