@@ -120,7 +120,7 @@ public class ConsoleOutputImpl implements ConsoleOutput {
         Entity entity = getEntity(source);
         FiguraClient.LOGGER.info(
                 "[Lua] {}: {}\n",
-                entity != null ? entity.getName().getString() : "unknown",
+                entity != null ? entity.getName().getString() : source != null ? source.toString() : "(unknown)",
                 message
         );
     }
