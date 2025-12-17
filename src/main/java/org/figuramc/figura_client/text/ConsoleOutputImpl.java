@@ -11,11 +11,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.SnbtGrammar;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.*;
 import net.minecraft.util.parsing.packrat.commands.CommandArgumentParser;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -40,18 +36,7 @@ public class ConsoleOutputImpl implements ConsoleOutput {
     );
 
     private static Component getEntityNameComponent(@Nullable UUID source) {
-        Entity entity = null;
-        locate: {
-            if (source == null) break locate;
-            ClientLevel level = Minecraft.getInstance().level;
-            if (level == null) break locate;
-            Player maybePlayer = level.getPlayerByUUID(source);
-            if (maybePlayer != null) {
-                entity = maybePlayer;
-                break locate;
-            }
-            entity = level.getEntity(source);
-        }
+        Entity entity = getEntity(source);
         MutableComponent text;
         if (entity != null) text = entity.getName().copy().withStyle(Style.EMPTY.withHoverEvent(
                 new HoverEvent.ShowEntity(new HoverEvent.EntityTooltipInfo(entity.getType(), source, entity.getName()))
@@ -65,17 +50,41 @@ public class ConsoleOutputImpl implements ConsoleOutput {
                 text = MISSING_ENTITY.copy().withStyle(Style.EMPTY.withHoverEvent(
                         new HoverEvent.ShowText(Component.literal(
                                 // TODO: use game language
-                                ClientTranslatables.LOG_NO_SOURCE.translate(Language.EN_US, TranslatableItems.Items0.INSTANCE)
+                                ClientTranslatables.LOG_NO_SOURCE.translate(
+                                        Language.EN_US,
+                                        TranslatableItems.Items0.INSTANCE
+                                )
                         ))
                 ));
         }
         return text;
     }
 
+    private static @Nullable Entity getEntity(@Nullable UUID source) {
+        if (source == null) return null;
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) return null;
+        Player maybePlayer = level.getPlayerByUUID(source);
+        if (maybePlayer != null) {
+            return maybePlayer;
+        }
+        return level.getEntity(source);
+    }
+
     @Override
     public void logSimple(@Nullable UUID source, String message) {
-        Component entityRef = getEntityNameComponent(source);
-        throw new AssertionError("Not implemented");
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            Component entityRef = getEntityNameComponent(source);
+            MutableComponent root = Component.empty();
+            // TODO: decide whether to use custom [lua] color from 0.1.x
+            root.append(Component.literal("[lua] ").withStyle(ChatFormatting.BLUE));
+            root.append(entityRef);
+            root.append(Component.literal(" : ").withStyle(ChatFormatting.BLUE));
+            root.append(message);
+            // defer this or else get a render crash
+            Minecraft.getInstance().execute(() -> player.displayClientMessage(root, false));
+        }
     }
 
     @Override
@@ -90,19 +99,30 @@ public class ConsoleOutputImpl implements ConsoleOutput {
      */
     @Override
     public void logNativeFormatted(String formatted) {
-        Component text;
-        try {
-            Tag t = TAG_PARSER.parseForCommands(new StringReader(formatted));
-            DataResult<Pair<Component, Tag>> decode = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, t);
-            text = decode.getOrThrow().getFirst();
-        } catch (CommandSyntaxException | IllegalStateException ignored) {
-            // fallback to just printing the raw text
-            text = Component.literal(formatted);
-        }
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            player.displayClientMessage(text, false);
+            Component text;
+            try {
+                Tag t = TAG_PARSER.parseForCommands(new StringReader(formatted));
+                DataResult<Pair<Component, Tag>> decode = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, t);
+                text = decode.getOrThrow().getFirst();
+            } catch (CommandSyntaxException | IllegalStateException ignored) {
+                // fallback to just printing the raw text
+                text = Component.literal(formatted);
+            }
+            final Component finalText = text; // lambda needs this to bind correctly
+            Minecraft.getInstance().execute(() -> player.displayClientMessage(finalText, false));
         }
+    }
+
+    @Override
+    public void logVerbose(@Nullable UUID source, String message) {
+        Entity entity = getEntity(source);
+        FiguraClient.LOGGER.info(
+                "[Lua] {}: {}\n",
+                entity != null ? entity.getName().getString() : "unknown",
+                message
+        );
     }
 
     @Override

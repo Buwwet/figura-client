@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Style;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.text.FormattedText;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +46,7 @@ public class FiguraTextContents implements ComponentContents {
     }
 
     @Override
-    public @NonNull MapCodec<? extends ComponentContents> codec() {
+    public @NotNull MapCodec<? extends ComponentContents> codec() {
         return CODEC;
     }
 
@@ -56,8 +56,8 @@ public class FiguraTextContents implements ComponentContents {
     }
 
     @Override
-    public <T> @NonNull Optional<T> visit(net.minecraft.network.chat.FormattedText.@NonNull StyledContentConsumer<T> styledContentConsumer,
-                                          @NonNull Style style) {
+    public <T> @NotNull Optional<T> visit(net.minecraft.network.chat.FormattedText.@NotNull StyledContentConsumer<T> styledContentConsumer,
+                                          @NotNull Style style) {
         return ComponentContents.super.visit(styledContentConsumer, style);
     }
 }
