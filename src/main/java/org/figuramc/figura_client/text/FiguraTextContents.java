@@ -6,8 +6,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.Style;
-import org.figuramc.figura_core.manage.AvatarManagers;
-import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.text.FormattedText;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,8 +14,12 @@ import java.util.UUID;
 
 /**
  * Custom component for Figura extended formatting.
+ * <br>
+ * for future reference: {@link net.minecraft.network.chat.contents.ObjectContents}, {@link net.minecraft.network.chat.contents.objects.ObjectInfo}, {@link net.minecraft.network.chat.contents.objects.PlayerSprite}
  */
 public class FiguraTextContents implements ComponentContents {
+    private static final String PLACEHOLDER = Character.toString('￼');
+
     public record FormattedTextRef(String fallback, UUID avatar, UUID text) {
         public static final Codec<FormattedTextRef> CODEC = RecordCodecBuilder.create(instance ->
                 instance.group(
@@ -35,15 +37,7 @@ public class FiguraTextContents implements ComponentContents {
     );
 
     private final FormattedTextRef figura;
-
-    private final FormattedText fallback;
-
-    private FormattedText contents() {
-        AvatarView<UUID> maybeAvatar = AvatarManagers.ENTITIES.get(figura.avatar);
-        if (maybeAvatar == null) return fallback;
-        FormattedText extern = maybeAvatar.useFor(avatar -> avatar.getExposedFormattedText(figura.text));
-        return extern == null ? fallback : extern;
-    }
+    private final FiguraFontDescription fontDesc;
 
     @Override
     public @NotNull MapCodec<? extends ComponentContents> codec() {
@@ -52,12 +46,20 @@ public class FiguraTextContents implements ComponentContents {
 
     public FiguraTextContents(FormattedTextRef figura) {
         this.figura = figura;
-        this.fallback = new FormattedText(this.figura.fallback);
+        this.fontDesc = new FiguraFontDescription(new FormattedText(this.figura.fallback), figura.avatar, figura.text);
     }
 
     @Override
     public <T> @NotNull Optional<T> visit(net.minecraft.network.chat.FormattedText.@NotNull StyledContentConsumer<T> styledContentConsumer,
                                           @NotNull Style style) {
-        return ComponentContents.super.visit(styledContentConsumer, style);
+        // we have no intention of actually rendering the PLACEHOLDER,
+        // but we need to communicate the font and at least 1 glyph to get into the rendering process
+        return styledContentConsumer.accept(style.withFont(fontDesc), PLACEHOLDER);
+    }
+
+    @Override
+    public <T> @NotNull Optional<T> visit(net.minecraft.network.chat.FormattedText.ContentConsumer<T> contentConsumer) {
+        // This is the string-only fallback content, read out by the narrator etc. and written to logs
+        return contentConsumer.accept("<" + figura.fallback + ">");
     }
 }
