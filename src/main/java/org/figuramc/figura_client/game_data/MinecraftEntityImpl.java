@@ -15,6 +15,7 @@ import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEntity;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
+import org.figuramc.figura_core.util.data_structures.Pair;
 import org.joml.Vector2d;
 import org.joml.Vector3d;
 import org.jspecify.annotations.Nullable;
@@ -114,7 +115,7 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
     }
 
     @Override @Nullable
-    public Object[] getTargetedEntity(Double distance) {
+    public Pair<MinecraftEntity, Vector3d> getTargetedEntity(Double distance) {
         if (distance == null) distance = 20d;
         distance = Math.max(Math.min(distance, 20), 0);
 
@@ -128,7 +129,8 @@ public record MinecraftEntityImpl(Entity entity) implements MinecraftEntity {
         EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(entity, start, vec33, aABB, e -> e != entity, distance);
 
         if (entityHit != null) {
-            return new Object[]{new MinecraftEntityImpl(entityHit.getEntity()), entityHit.getLocation()};
+            Vec3 pos = entityHit.getLocation();
+            return new Pair<>(new MinecraftEntityImpl(entityHit.getEntity()), new Vector3d(pos.x, pos.y, pos.z));
         }
         return null;
     }
