@@ -22,7 +22,6 @@
     "render.model.ModelFeatureRendererMixin",
     "render.model.ModelPartMixin",
     "render.model.ModelSubmitMixin",
-    "text.TextComponentParsingMixin",
     "tick.ClientLevelMixin"
   ]
 }
