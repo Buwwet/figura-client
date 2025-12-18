@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.renderer.part.vanilla_optimized.OptimizedRenderer;
+import org.figuramc.figura_client.text.ConsoleOutputImpl;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
@@ -69,7 +70,7 @@ public class FiguraClient implements ClientModInitializer {
 		FiguraConnectionPoint.TEXTURE_PROVIDER = new TextureProviderImpl();
 		FiguraConnectionPoint.PART_RENDERER_FACTORY = OptimizedRenderer::new;
 		FiguraConnectionPoint.GAME_DATA_PROVIDER = new GameDataProviderImpl();
-		FiguraConnectionPoint.ERROR_REPORTER = new ErrorReporterImpl();
+		FiguraConnectionPoint.CONSOLE_OUTPUT = new ConsoleOutputImpl();
 		FiguraConnectionPoint.PATH_PROVIDER = new PathProviderImpl();
 		FiguraConnectionPoint.finishInit();
 
