@@ -45,6 +45,8 @@ public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemSt
 
     @Override
     public MinecraftBlockState getBlockState() {
+        if (stack.getItem() instanceof BlockItem blockItem)
+            return new MinecraftBlockStateImpl(blockItem.getBlock().defaultBlockState(), null);
         return null;
     }
 
