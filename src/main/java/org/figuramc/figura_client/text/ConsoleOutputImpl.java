@@ -28,12 +28,87 @@ import java.util.UUID;
 
 public class ConsoleOutputImpl implements ConsoleOutput {
     private static final CommandArgumentParser<Tag> TAG_PARSER = SnbtGrammar.createParser(NbtOps.INSTANCE);
-    private static final Component MISSING_ENTITY = Component.literal(
-            // TODO: use game language
-            ClientTranslatables.LOG_MISSING_ENTITY.translate(Language.EN_US, TranslatableItems.Items0.INSTANCE)
-    ).withStyle(
-            Style.EMPTY.withColor(ChatFormatting.GRAY)
-    );
+    // TODO: Use game language, for all of these
+    private static final Component MISSING_ENTITY = Component.literal(ClientTranslatables.LOG_MISSING_ENTITY.translate(Language.EN_US, TranslatableItems.Items0.INSTANCE)).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY));
+    private static final Component NO_SOURCE = Component.literal(ClientTranslatables.LOG_NO_SOURCE.translate(Language.EN_US, TranslatableItems.Items0.INSTANCE)).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY));
+    private static final Component UNKNOWN_SOURCE = Component.literal(ClientTranslatables.LOG_UNKNOWN_SOURCE.translate(Language.EN_US, TranslatableItems.Items0.INSTANCE)).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY));
+
+    @Override
+    public void logSimple(@Nullable Object source, String message) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            Component sourceComponent = getSourceComponent(source);
+            MutableComponent root = Component.empty();
+            // TODO: decide whether to use custom [lua] color from 0.1.x
+            root.append(Component.literal("[lua] ").withStyle(ChatFormatting.BLUE));
+            root.append(sourceComponent);
+            root.append(Component.literal(" : ").withStyle(ChatFormatting.BLUE));
+            root.append(message);
+            // defer this or else get a render crash
+            Minecraft.getInstance().execute(() -> player.displayClientMessage(root, false));
+        }
+    }
+
+    @Override
+    public void logFormatted(FormattedText text) {
+        // TODO
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * tellraw/sNBT
+     * equivalent of printJson on 0.1.x
+     */
+    @Override
+    public void logNativeFormatted(String formatted) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            Component text;
+            try {
+                Tag t = TAG_PARSER.parseForCommands(new StringReader(formatted));
+                DataResult<Pair<Component, Tag>> decode = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, t);
+                text = decode.getOrThrow().getFirst();
+            } catch (CommandSyntaxException | IllegalStateException ignored) {
+                // fallback to just printing the raw text
+                text = Component.literal(formatted);
+            }
+            final Component finalText = text; // lambda needs this to bind correctly
+            Minecraft.getInstance().execute(() -> player.displayClientMessage(finalText, false));
+        }
+    }
+
+    @Override
+    public void logVerbose(@Nullable Object source, String message) {
+        String sourceString = getSourceString(source);
+        FiguraClient.LOGGER.info("[Lua] {}: {}\n", sourceString, message);
+    }
+
+    @Override
+    public void reportError(FiguraException e) {
+        FiguraClient.LOGGER.error("Figura Exception occurred:", e);
+    }
+
+    @Override
+    public void reportUnexpectedError(Throwable throwable) {
+        FiguraClient.LOGGER.error("Unexpected internal Figura error! Please report to devs!", throwable);
+    }
+
+    private static String getSourceString(@Nullable Object source) {
+        if (source == null) return "No Source";
+        if (source instanceof UUID uuid) {
+            Entity e = getEntity(uuid);
+            return e == null ? "Missing Entity" : e.getName().getString();
+        }
+        if (source instanceof String s) return s;
+        return "Unknown Source";
+    }
+
+    private static Component getSourceComponent(@Nullable Object source) {
+        if (source == null) return NO_SOURCE;
+        if (source instanceof UUID uuid) return getEntityNameComponent(uuid);
+        if (source instanceof String s) return Component.literal(s);
+        return UNKNOWN_SOURCE;
+    }
 
     private static Component getEntityNameComponent(@Nullable UUID source) {
         Entity entity = getEntity(source);
@@ -71,67 +146,5 @@ public class ConsoleOutputImpl implements ConsoleOutput {
         return level.getEntity(source);
     }
 
-    @Override
-    public void logSimple(@Nullable UUID source, String message) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null) {
-            Component entityRef = getEntityNameComponent(source);
-            MutableComponent root = Component.empty();
-            // TODO: decide whether to use custom [lua] color from 0.1.x
-            root.append(Component.literal("[lua] ").withStyle(ChatFormatting.BLUE));
-            root.append(entityRef);
-            root.append(Component.literal(" : ").withStyle(ChatFormatting.BLUE));
-            root.append(message);
-            // defer this or else get a render crash
-            Minecraft.getInstance().execute(() -> player.displayClientMessage(root, false));
-        }
-    }
 
-    @Override
-    public void logFormatted(FormattedText text) {
-        // TODO
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * tellraw/sNBT
-     * equivalent of printJson on 0.1.x
-     */
-    @Override
-    public void logNativeFormatted(String formatted) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null) {
-            Component text;
-            try {
-                Tag t = TAG_PARSER.parseForCommands(new StringReader(formatted));
-                DataResult<Pair<Component, Tag>> decode = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, t);
-                text = decode.getOrThrow().getFirst();
-            } catch (CommandSyntaxException | IllegalStateException ignored) {
-                // fallback to just printing the raw text
-                text = Component.literal(formatted);
-            }
-            final Component finalText = text; // lambda needs this to bind correctly
-            Minecraft.getInstance().execute(() -> player.displayClientMessage(finalText, false));
-        }
-    }
-
-    @Override
-    public void logVerbose(@Nullable UUID source, String message) {
-        Entity entity = getEntity(source);
-        FiguraClient.LOGGER.info(
-                "[Lua] {}: {}\n",
-                entity != null ? entity.getName().getString() : source != null ? source.toString() : "(unknown)",
-                message
-        );
-    }
-
-    @Override
-    public void reportError(FiguraException e) {
-        FiguraClient.LOGGER.error("Figura Exception occurred:", e);
-    }
-
-    @Override
-    public void reportUnexpectedError(Throwable throwable) {
-        FiguraClient.LOGGER.error("Unexpected internal Figura error! Please report to devs!", throwable);
-    }
 }
