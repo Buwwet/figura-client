@@ -2,9 +2,13 @@ package org.figuramc.figura_client.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
+import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
+import org.figuramc.figura_core.script_hooks.callback.items.EntityView;
+import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,7 +23,10 @@ public class MinecraftMixin {
         AvatarManagers.pollAll();
         AvatarManagers.forEachAvatar(avatar -> {
             avatar.tick();
-            avatar.getEventListener(Event.CLIENT_TICK).invoke(CallbackItem.Unit.INSTANCE);
+
+            try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())) {
+                avatar.getEventListener(Event.CLIENT_TICK).invoke(worldView);
+            }
         });
     }
 
