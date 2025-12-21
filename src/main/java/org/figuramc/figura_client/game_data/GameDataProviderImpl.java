@@ -29,14 +29,14 @@ public class GameDataProviderImpl implements GameDataProvider {
         return new MinecraftEntityImpl(level.getEntity(uuid));
     }
 
-    @Override
-    public @Nullable MinecraftItem getItem(String identifier) {
-        Identifier loc = Identifier.tryParse(identifier);
-        if (loc == null) return null;
-        Optional<Item> item = BuiltInRegistries.ITEM.getOptional(loc);
-        if (item.isEmpty()) return null;
-        return new MinecraftItemImpl(item.get());
-    }
+//    @Override
+//    public @Nullable MinecraftItem getItem(String identifier) {
+//        Identifier loc = Identifier.tryParse(identifier);
+//        if (loc == null) return null;
+//        Optional<Item> item = BuiltInRegistries.ITEM.getOptional(loc);
+//        if (item.isEmpty()) return null;
+//        return new MinecraftItemImpl(item.get());
+//    }
 
     @Override
     public float[] getWindowSize() {

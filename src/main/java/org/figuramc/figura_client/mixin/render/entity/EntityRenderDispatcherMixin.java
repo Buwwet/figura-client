@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -55,22 +56,20 @@ public abstract class EntityRenderDispatcherMixin {
         EntityRenderStateAccess access = (EntityRenderStateAccess) entityRenderState;
         access.figura_client$reset();
 
-        AvatarView<UUID> view = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
+        AvatarView<UUID> view = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl<>(entity));
         if (view == null) return entityRenderState;
 
         // We have an avatar here.
         access.figura_client$setAvatarView(view);
 
-
-
         view.use(avatar -> {
-            try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())) {
+            try (
+                    EntityView<?> entityView = new EntityView<>(new MinecraftEntityImpl<>(entity));
+                    WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl((ClientLevel) entity.level()))
+            ) {
                 // Invoke entity rendering event, obtaining callbacks
-                var callbacks = avatar.getEventListener(Event.ENTITY_RENDER).invokeFor(new CallbackItem.Tuple3<>(
-                        new CallbackItem.F32(delta),
-                        new EntityView<>(new MinecraftEntityImpl(entity)),
-                        worldView
-                ));
+                var callbacks = avatar.getEventListener(Event.ENTITY_RENDER).invokeFor(
+                        new CallbackItem.Tuple3<>(new CallbackItem.F32(delta), entityView, worldView));
                 // Invoke the callbacks later on the render thread by setting the code submit
                 access.figura_client$setCodeSubmit(() -> {
                     // We need to acquire the avatar again in here; since this runs later.
@@ -80,7 +79,7 @@ public abstract class EntityRenderDispatcherMixin {
                             var funcView = callback.a().value();
                             if (funcView == null) continue;
                             var data = callback.b();
-                            var func = funcView.getCallback();
+                            var func = funcView.getValue();
                             if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
                             func.call(data);
                         }

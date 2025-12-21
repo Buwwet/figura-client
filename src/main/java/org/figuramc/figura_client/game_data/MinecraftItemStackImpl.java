@@ -9,7 +9,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
@@ -19,9 +18,10 @@ import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.item.component.UseCooldown;
 import net.minecraft.world.item.enchantment.Repairable;
 import net.minecraft.world.item.equipment.Equippable;
+import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
 import org.figuramc.figura_core.minecraft_interop.game_data.block.MinecraftBlockState;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItem;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemStack;
+import org.figuramc.figura_core.minecraft_interop.game_data.item.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,17 +31,14 @@ import java.util.Optional;
 public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemStack {
 
     @Override
-    public List<String> getTags() {
-        List<String> list = new ArrayList<>();
-
-        for (TagKey<Item> itemTagKey : stack.getTags().toList())
-            list.add(itemTagKey.location().toString());
-
-        return list;
+    public MinecraftIdentifier getIdentifier() {
+        return stack.getItemHolder().unwrapKey().map(key -> FiguraClient.coreIdent(key.identifier())).orElse(FiguraClient.UNKNOWN);
     }
 
     @Override
-    public MinecraftItemStack copy() { return new MinecraftItemStackImpl(stack.copy()); }
+    public List<MinecraftIdentifier> getTags() {
+        return stack.getTags().map(tag -> FiguraClient.coreIdent(tag.location())).toList();
+    }
 
     @Override
     public MinecraftBlockState getBlockState() {
@@ -51,19 +48,22 @@ public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemSt
     }
 
     @Override
-    public MinecraftItem getItem() {
-        return new MinecraftItemImpl(stack.getItem());
-    }
-
-    // TODO
-    @Override
-    public Object getTag() {
-        return null;
-    }
-
-    @Override
-    public String getUseAction() {
-        return stack.getUseAnimation().name();
+    public ItemUseAction getUseAction() {
+        // Looks ugly, but if new animations are added and we don't deal with them, this will fail to compile
+        return switch (stack.getUseAnimation()) {
+            case NONE -> ItemUseAction.NONE;
+            case EAT -> ItemUseAction.EAT;
+            case DRINK -> ItemUseAction.DRINK;
+            case BLOCK -> ItemUseAction.BLOCK;
+            case BOW -> ItemUseAction.BOW;
+            case TRIDENT -> ItemUseAction.TRIDENT;
+            case CROSSBOW -> ItemUseAction.CROSSBOW;
+            case SPYGLASS -> ItemUseAction.SPYGLASS;
+            case TOOT_HORN -> ItemUseAction.TOOT_HORN;
+            case BRUSH -> ItemUseAction.BRUSH;
+            case BUNDLE -> ItemUseAction.BUNDLE;
+            case SPEAR -> ItemUseAction.SPEAR;
+        };
     }
 
     @Override
@@ -72,13 +72,14 @@ public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemSt
     }
 
     @Override
-    public String getID() {
-        return stack.getItem().getName().getString();
-    }
-
-    @Override
-    public String getRarity() {
-        return stack.getRarity().name();
+    public ItemRarity getRarity() {
+        // Looks ugly, but if new rarities are added and we don't deal with them, this will fail to compile
+        return switch (stack.getRarity()) {
+            case COMMON -> ItemRarity.COMMON;
+            case UNCOMMON -> ItemRarity.UNCOMMON;
+            case RARE -> ItemRarity.RARE;
+            case EPIC -> ItemRarity.EPIC;
+        };
     }
 
     @Override
@@ -87,29 +88,27 @@ public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemSt
         return "";
     }
 
-    @Override @Nullable
-    public String getEquipmentSlot() {
+    @Override
+    public @Nullable EquipmentSlot getEquipmentSlot() {
         Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
-        if (equippable == null)
-            return null;
-        return equippable.slot().name();
+        if (equippable == null) return null;
+        // Looks ugly, but if new slots are added and we don't deal with them, this will fail to compile
+        return switch (equippable.slot()) {
+            case MAINHAND -> EquipmentSlot.MAINHAND;
+            case OFFHAND -> EquipmentSlot.OFFHAND;
+            case FEET -> EquipmentSlot.FEET;
+            case LEGS -> EquipmentSlot.LEGS;
+            case CHEST -> EquipmentSlot.CHEST;
+            case HEAD -> EquipmentSlot.HEAD;
+            case BODY -> EquipmentSlot.BODY;
+            case SADDLE -> EquipmentSlot.SADDLE;
+        };
     }
 
-    @Override
-    public int getCount() {
-        return stack.getCount();
-    }
-
-    @Override
-    public int getDamage() { return stack.getDamageValue(); }
-
-    @Override
-    public int getPopTime() { return stack.getPopTime(); }
-
-    @Override
-    public int getMaxDamage() {
-        return stack.getMaxDamage();
-    }
+    @Override public int getCount() { return stack.getCount(); }
+    @Override public int getDamage() { return stack.getDamageValue(); }
+    @Override public int getPopTime() { return stack.getPopTime(); }
+    @Override public int getMaxDamage() { return stack.getMaxDamage(); }
 
     @Override
     public int getRepairCost() {
@@ -119,6 +118,7 @@ public record MinecraftItemStackImpl(ItemStack stack) implements MinecraftItemSt
         return repair_cost;
     }
 
+    // TODO: Give this a MinecraftLivingEntity param instead of implicitly using the local player?
     @Override
     public int getUseDuration() {
         // Now requires an entity, passing ourselves.

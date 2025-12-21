@@ -1,184 +1,134 @@
 package org.figuramc.figura_client.game_data;
 
-import com.mojang.brigadier.StringReader;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.arguments.blocks.BlockStateArgument;
-import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.saveddata.maps.MapDecoration;
+import net.minecraft.world.level.MoonPhase;
 import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.timeline.Timelines;
+import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
 import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftWorld;
 import org.figuramc.figura_core.minecraft_interop.game_data.block.MinecraftBlockState;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEntity;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItem;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemStack;
-import org.figuramc.figura_core.util.exception.FiguraException;
+import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftPlayer;
+import org.figuramc.figura_core.util.functional.BiThrowingConsumer;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.UUID;
 
-public record MinecraftWorldImpl() implements MinecraftWorld {
+public record MinecraftWorldImpl(ClientLevel level) implements MinecraftWorld {
 
     @Override
-    public Map<String, MinecraftEntity> getPlayers() {
-        HashMap<String, MinecraftEntity> map = new HashMap<>();
-        for (AbstractClientPlayer player : getLevel().players()) {
-            map.put(player.getName().toString(), new MinecraftEntityImpl(player.getLivingEntity()));
-        }
-        return map;
+    public @Nullable MapData getMapData(int id) {
+        MapItemSavedData data = level.getMapData(new MapId(id));
+        if (data == null) return null;
+
+        // TODO: Add the decorations back in
+        return new MapData(data.centerX, data.centerZ, data.locked, data.scale);
+
+//        ArrayList<HashMap<String, Object>> decorations = new ArrayList<>();
+//        for (MapDecoration decoration : data.getDecorations()) {
+//            HashMap<String, Object> decorationMap = new HashMap<>();
+//            decorationMap.put("type", decoration.type().toString());
+//            decorationMap.put("name", decoration.name().isEmpty() ? "" : decoration.name());
+//            decorationMap.put("x", decoration.x());
+//            decorationMap.put("y", decoration.y());
+//            decorationMap.put("rot", decoration.rot());
+//            decorationMap.put("image", decoration.getSpriteLocation());
+//            decorations.add(decorationMap);
+//        }
+//        map.put("decorations", decorations);
     }
 
     @Override
-    public List<MinecraftEntity> getEntities(int x1, int y1, int z1, int x2, int y2, int z2) {
-        ArrayList<MinecraftEntity> list = new ArrayList<>();
-        AABB aabb = new AABB(x1, y1, z1, x2, y2, z2);
-        // Wrap all entities inside
-        for (Entity entity : getLevel().getEntitiesOfClass(Entity.class, aabb)) {
-            list.add(new MinecraftEntityImpl(entity));
-        }
-        return list;
+    public <E1 extends Throwable, E2 extends Throwable> void forEachPlayer(BiThrowingConsumer<MinecraftPlayer, E1, E2> consumer) throws E1, E2 {
+        for (Player player : level.players())
+            consumer.accept(new MinecraftPlayerImpl<>(player));
     }
 
     @Override
-    public HashMap<String, Object> getMapData(int id) {
-        MapItemSavedData data = getLevel().getMapData(new MapId(id));
-        if (data == null)
-            return null;
-
-        HashMap<String, Object> map = new HashMap<>();
-
-        map.put("center_x", data.centerX);
-        map.put("center_z", data.centerZ);
-        map.put("locked", data.locked);
-        map.put("scale", data.scale);
-
-        ArrayList<HashMap<String, Object>> decorations = new ArrayList<>();
-        for (MapDecoration decoration : data.getDecorations()) {
-            HashMap<String, Object> decorationMap = new HashMap<>();
-            decorationMap.put("type", decoration.type().toString());
-            decorationMap.put("name", decoration.name().isEmpty() ? "" : decoration.name());
-            decorationMap.put("x", decoration.x());
-            decorationMap.put("y", decoration.y());
-            decorationMap.put("rot", decoration.rot());
-            decorationMap.put("image", decoration.getSpriteLocation());
-            decorations.add(decorationMap);
-        }
-        map.put("decorations", decorations);
-
-        return map;
-    }
-
-    @Override
-    public List<MinecraftBlockState> getBlocks(int x, int y, int z, int w, int t, int h) {
-        List<MinecraftBlockState> list = new ArrayList<>();
-
-        BlockPos min = new BlockPos(x, y, z);
-        BlockPos max = new BlockPos(w, t, h);
-        max = new BlockPos(
-                Math.min(min.getX() + 8, max.getX()),
-                Math.min(min.getY() + 8, max.getY()),
-                Math.min(min.getZ() + 8, max.getZ())
-        );
-        if (min.compareTo(max) > 0) {
-            // TODO Implement Figura Errors
-            throw new RuntimeException("Your max value can't be smaller than your min!");
-        }
-        Level level = getLevel();
-        if (!level.hasChunksAt(min, max))
-            return list;
-
-        BlockPos.betweenClosedStream(min, max).forEach(blockPos -> {
-            BlockPos pos = new BlockPos(blockPos);
-            list.add(new MinecraftBlockStateImpl(level.getBlockState(pos), pos));
-        });
-        return list;
+    public <E1 extends Throwable, E2 extends Throwable> void forEachEntity(BiThrowingConsumer<MinecraftEntity, E1, E2> consumer) throws E1, E2 {
+        for (Entity entity : level.entitiesForRendering()) // On 1.21.11, this gets ALL entities as expected
+            consumer.accept(new MinecraftEntityImpl<>(entity));
     }
 
     @Override
     public MinecraftBlockState getBlockState(int x, int y, int z) {
         BlockPos blockPos = new BlockPos(x, y ,z);
-        return new MinecraftBlockStateImpl(getLevel().getBlockState(new BlockPos(x, y ,z)), blockPos);
+        return new MinecraftBlockStateImpl(level.getBlockState(blockPos), blockPos);
     }
 
-    @Override
-    public MinecraftBlockState newBlock(String string, int x, int y, int z) {
-        BlockPos pos = new BlockPos(x, y, z);
-        try {
-            Level level = getLevel();
-            BlockState block = BlockStateArgument.block(CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures())).parse(new StringReader(string)).getState();
-            return new MinecraftBlockStateImpl(block, pos);
-        } catch (Exception e) {
-            // TODO: use Figura Exception
-            throw new RuntimeException("Could not parse block state from string: " + string);
-        }
-    }
-
-    @Override
-    public MinecraftItemStack newItem(String string, int count, int damage) {
-        try {
-            Level level = getLevel();
-            ItemStack item = ItemArgument.item(CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures())).parse(new StringReader(string)).createItemStack(1, false);
-            item.setCount(count);
-            item.setDamageValue(damage);
-            return new MinecraftItemStackImpl(item);
-        } catch (Exception e) {
-            // TODO: Use FiguraException
-            throw new RuntimeException("Could not parse item stack from string: " + string);
-        }
-    }
+//    @Override
+//    public MinecraftBlockState newBlock(String string, int x, int y, int z) {
+//        BlockPos pos = new BlockPos(x, y, z);
+//        try {
+//            Level level = getLevel();
+//            BlockState block = BlockStateArgument.block(CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures())).parse(new StringReader(string)).getState();
+//            return new MinecraftBlockStateImpl(block, pos);
+//        } catch (Exception e) {
+//            // TODO: use Figura Exception
+//            throw new RuntimeException("Could not parse block state from string: " + string);
+//        }
+//    }
+//
+//    @Override
+//    public MinecraftItemStack newItem(String string, int count, int damage) {
+//        try {
+//            Level level = getLevel();
+//            ItemStack item = ItemArgument.item(CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures())).parse(new StringReader(string)).createItemStack(1, false);
+//            item.setCount(count);
+//            item.setDamageValue(damage);
+//            return new MinecraftItemStackImpl(item);
+//        } catch (Exception e) {
+//            // TODO: Use FiguraException
+//            throw new RuntimeException("Could not parse item stack from string: " + string);
+//        }
+//    }
 
     @Override
     public MinecraftEntity getEntity(UUID uuid) {
-        return new MinecraftEntityImpl(getLevel().getEntity(uuid));
+        Entity e = level.getEntity(uuid);
+        return e == null ? null : new MinecraftEntityImpl<>(e);
     }
 
     @Override
-    public String getCurrentDimension() {
-        return getLevel().dimension().identifier().toString();
+    public MinecraftIdentifier getDimension() {
+        return FiguraClient.coreIdent(level.dimension().identifier());
     }
 
     @Override
     public int getRedstonePower(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        // Check that chunk is loaded
-        if (getLevel().getChunkAt(pos).isEmpty())
-            return 0;
-        return getLevel().getBestNeighborSignal(pos);
+        if (level.getChunkAt(pos).isEmpty()) return 0;
+        return level.getBestNeighborSignal(pos);
     }
 
     @Override
     public int getStrongRedstonePower(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        // Check that chunk is loaded
-        if (getLevel().getChunkAt(pos).isEmpty())
-            return 0;
-        return getLevel().getDirectSignalTo(pos);
+        if (level.getChunkAt(pos).isEmpty()) return 0;
+        return level.getDirectSignalTo(pos);
     }
 
+    // TODO: Should moon phase use EnumLike as well, like poses and stuff?
     @Override
     public int getMoonPhase() {
-        // TODO getLevel().getMoonPhase() no longer exist and no references to moon or lunar
-        //Timelines.MOON?
-        return 0;
+        // Block pos is needed here because..........................
+        // This might be the most overengineered thing I have ever seen, this is some DFU level stuff
+        // Don't look at the code behind this
+        MoonPhase phase = level.environmentAttributes().getValue(EnvironmentAttributes.MOON_PHASE, BlockPos.ZERO);
+        return phase.index();
     }
 
     @Override
     public int getLightLevel(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        Level level = getLevel();
-        if (level.getChunkAt(pos).isEmpty())
-            return 0;
-
+        if (level.getChunkAt(pos).isEmpty()) return 0;
         level.updateSkyBrightness();
         return level.getLightEngine().getRawBrightness(pos, level.getSkyDarken());
     }
@@ -186,10 +136,7 @@ public record MinecraftWorldImpl() implements MinecraftWorld {
     @Override
     public int getSkyLightLevel(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        Level level = getLevel();
-        if (level.getChunkAt(pos).isEmpty())
-            return 0;
-
+        if (level.getChunkAt(pos).isEmpty()) return 0;
         level.updateSkyBrightness();
         return level.getBrightness(LightLayer.SKY, pos);
     }
@@ -197,66 +144,30 @@ public record MinecraftWorldImpl() implements MinecraftWorld {
     @Override
     public int getBlockLightLevel(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        Level level = getLevel();
-        if (level.getChunkAt(pos).isEmpty())
-            return 0;
-
-        level.updateSkyBrightness();
+        if (level.getChunkAt(pos).isEmpty()) return 0;
+//        level.updateSkyBrightness(); // Sky brightness update shouldn't affect block light?
         return level.getBrightness(LightLayer.BLOCK, pos);
     }
 
-    @Override
-    public int getHeight() { return getLevel().getHeight(); }
+    @Override public int getHeight() { return level.getHeight(); }
+
+    @Override public long getTime() { return level.getGameTime(); }
+    @Override public long getTimeOfDay() { return level.getDayTime() % 24000L; }
+    @Override public long getDay() { return level.getDayTime() / 24000L; }
+
+    @Override public float getRainGradient(float tickDelta) { return level.getRainLevel(tickDelta); }
+
+    @Override public boolean isChunkLoaded(int x, int y, int z) { return !level.getChunkAt(new BlockPos(x, y, z)).isEmpty(); }
 
     @Override
-    public double getTime(double delta) {
-        return getLevel().getGameTime() + delta;
-    }
-
-    @Override
-    public double getTimeOfDay(double delta) {
-        return getLevel().getDayTime() + delta;
-    }
-
-    @Override
-    public double getDayTime(double delta) {
-        return (getLevel().getDayTime() + delta) % 24000;
-    }
-
-    @Override
-    public double getDay(double delta) {
-        return Math.floor((getLevel().getDayTime() + delta) / 24000);
-    }
-
-    @Override
-    public double getRainGradient(Float delta) {
-        if (delta == null)
-            delta = 1.0f;
-        return 0;
-    }
-
-    @Override
-    public boolean isChunkLoaded(int x, int y, int z) {
-        BlockPos pos = new BlockPos(x, y, z);
-        return !getLevel().getChunkAt(pos).isEmpty();
-    }
-
-    @Override
-    public boolean isThundering(int x, int y, int z) { return getLevel().isThundering(); }
+    public boolean isThundering() { return level.isThundering(); }
 
     @Override
     public boolean isOpenSky(int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        Level level = getLevel();
-        if (level.getChunkAt(pos).isEmpty())
-            return false;
-
+        if (level.getChunkAt(pos).isEmpty()) return true;
         level.updateSkyBrightness();
         return level.canSeeSky(pos);
     }
 
-    ///  Helper to get the current level.
-    private ClientLevel getLevel() {
-        return Minecraft.getInstance().level;
-    }
 }

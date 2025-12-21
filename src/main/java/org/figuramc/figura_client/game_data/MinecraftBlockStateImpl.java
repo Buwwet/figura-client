@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
@@ -26,123 +27,115 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
 import org.figuramc.figura_core.minecraft_interop.game_data.block.MinecraftBlockState;
 import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItem;
+import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemStack;
+import org.figuramc.figura_core.util.ListUtils;
 import org.joml.Vector3d;
+import org.joml.Vector3f;
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
 
 import java.util.*;
 
 public record MinecraftBlockStateImpl(BlockState blockState, BlockPos blockPos) implements MinecraftBlockState {
+
     @Override
-    public String getId() {
-        return blockState.getBlockHolder().getRegisteredName();
+    public MinecraftIdentifier getIdentifier() {
+        return blockState.getBlockHolder().unwrapKey().map(key -> FiguraClient.coreIdent(key.identifier())).orElse(FiguraClient.UNKNOWN);
     }
 
     @Override
-    public Vector3d getPos() {
-        return new Vector3d(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+    public Vector3i getBundledPos(Vector3i output) {
+        return output.set(blockPos.getX(), blockPos.getY(), blockPos.getZ());
     }
 
     @Override
-    public List<List<Vector3d>> getCollisionShape() {
-        return voxelShapeToTable(blockState.getCollisionShape(getLevel(), blockPos));
+    public MinecraftBlockState withBundledPos(Vector3ic position) {
+        return new MinecraftBlockStateImpl(blockState, new BlockPos(position.x(), position.y(), position.z()));
     }
 
     @Override
-    public List<List<Vector3d>> getOutlineShape() {
-        return voxelShapeToTable(blockState.getShape(getLevel(), blockPos));
+    public List<MinecraftBlockState.AABB> getCollisionShape() {
+        return voxelShapeToCore(blockState.getCollisionShape(getLevel(), blockPos));
     }
 
     @Override
-    public HashMap<String, Set<String>> getTextures() {
-        // Direct port from fig 0.1.0
-        HashMap<String, Set<String>> map = new HashMap<>();
-
-        RenderShape renderShape = blockState.getRenderShape();
-
-        if (renderShape == RenderShape.MODEL) {
-            BlockRenderDispatcher blockRenderer = Minecraft.getInstance().getBlockRenderer();
-
-            BlockStateModel bakedModel = blockRenderer.getBlockModel(blockState);
-            RandomSource randomSource = RandomSource.create();
-            long seed = 42L;
-
-            for (Direction direction : Direction.values())
-                map.put(direction.name(), getTexturesForFace(direction, randomSource, bakedModel, seed));
-            map.put("NONE", getTexturesForFace(null, randomSource, bakedModel, seed));
-
-            TextureAtlasSprite particle = blockRenderer.getBlockModelShaper().getParticleIcon(blockState);
-            map.put("PARTICLE", Set.of(getTextureName(particle)));
-        }
-        // TODO: RenderShape.ENTITYBLOCK_ANIMATED no longer exists.
-        //else if (renderShape == RenderShape.ENTITYBLOCK_ANIMATED) {
-            //map.put("PARTICLE", Set.of(getTextureName(Minecraft.getInstance().getItemRenderer().getModel(blockState.getBlock().asItem().getDefaultInstance(), WorldAPI.getCurrentWorld(), null, 42).getParticleIcon())));
-       //}
-        return map;
+    public List<MinecraftBlockState.AABB> getOutlineShape() {
+        return voxelShapeToCore(blockState.getShape(getLevel(), blockPos));
     }
 
-    @Override
-    public Map<String, Object> getSounds() {
-        Map<String, Object> sounds = new HashMap<>();
-        SoundType snd = blockState.getSoundType();
-
-        sounds.put("pitch", snd.getPitch());
-        sounds.put("volume", snd.getVolume());
-        sounds.put("break", snd.getBreakSound().location().toString());
-        sounds.put("fall", snd.getFallSound().location().toString());
-        sounds.put("hit", snd.getHitSound().location().toString());
-        sounds.put("place", snd.getPlaceSound().location().toString());
-        sounds.put("step", snd.getStepSound().location().toString());
-
-        return sounds;
-    }
+//    @Override
+//    public HashMap<String, Set<String>> getTextures() {
+//        // Direct port from fig 0.1.0
+//        HashMap<String, Set<String>> map = new HashMap<>();
+//
+//        RenderShape renderShape = blockState.getRenderShape();
+//
+//        if (renderShape == RenderShape.MODEL) {
+//            BlockRenderDispatcher blockRenderer = Minecraft.getInstance().getBlockRenderer();
+//
+//            BlockStateModel bakedModel = blockRenderer.getBlockModel(blockState);
+//            RandomSource randomSource = RandomSource.create();
+//            long seed = 42L;
+//
+//            for (Direction direction : Direction.values())
+//                map.put(direction.name(), getTexturesForFace(direction, randomSource, bakedModel, seed));
+//            map.put("NONE", getTexturesForFace(null, randomSource, bakedModel, seed));
+//
+//            TextureAtlasSprite particle = blockRenderer.getBlockModelShaper().getParticleIcon(blockState);
+//            map.put("PARTICLE", Set.of(getTextureName(particle)));
+//        }
+//        // TODO: RenderShape.ENTITYBLOCK_ANIMATED no longer exists.
+//        //else if (renderShape == RenderShape.ENTITYBLOCK_ANIMATED) {
+//            //map.put("PARTICLE", Set.of(getTextureName(Minecraft.getInstance().getItemRenderer().getModel(blockState.getBlock().asItem().getDefaultInstance(), WorldAPI.getCurrentWorld(), null, 42).getParticleIcon())));
+//       //}
+//        return map;
+//    }
+//
+//    @Override
+//    public Map<String, Object> getSounds() {
+//        Map<String, Object> sounds = new HashMap<>();
+//        SoundType snd = blockState.getSoundType();
+//
+//        sounds.put("pitch", snd.getPitch());
+//        sounds.put("volume", snd.getVolume());
+//        sounds.put("break", snd.getBreakSound().location().toString());
+//        sounds.put("fall", snd.getFallSound().location().toString());
+//        sounds.put("hit", snd.getHitSound().location().toString());
+//        sounds.put("place", snd.getPlaceSound().location().toString());
+//        sounds.put("step", snd.getStepSound().location().toString());
+//
+//        return sounds;
+//    }
 
     @Override
     public List<String> getProperties() {
-        ArrayList<String> properties = new ArrayList<>();
-        for (Property<?> prop : blockState.getProperties()) {
-            properties.add(prop.getName());
-        }
-        return List.of();
+        return ListUtils.map(blockState.getProperties(), Property::getName);
     }
 
     @Override
-    public List<String> getTags() {
-        List<String> list = new ArrayList<>();
-        // Get the registry
-        Registry<Block> registry = getLevel().registryAccess().getOrThrow(Registries.BLOCK).value();
-        Optional<ResourceKey<Block>> key = registry.getResourceKey(blockState.getBlock());
-
-        if (key.isEmpty())
-            return list;
-        // TODO
-        /*
-        for (TagKey<Block> blockTagKey : registry.getHolderOrThrow(key.get()).tags().toList())
-            list.add(blockTagKey.location().toString());
-        */
-        return list;
+    public List<MinecraftIdentifier> getTags() {
+        return blockState.getTags().map(tag -> FiguraClient.coreIdent(tag.location())).toList();
     }
 
     @Override
-    public List<String> getFluidTags() {
-        List<String> list = new ArrayList<>();
-        for (TagKey<Fluid> fluidTagKey : blockState.getFluidState().getTags().toList())
-            list.add(fluidTagKey.location().toString());
-        return list;
+    public List<MinecraftIdentifier> getFluidTags() {
+        return blockState.getFluidState().getTags().map(tag -> FiguraClient.coreIdent(tag.location())).toList();
     }
 
     @Override
-    public Vector3d getMapColor() {
+    public Vector3f getMapColor(Vector3f output) {
         // TODO: color util
-        //return blockState.getMapColor(getLevel(), blockPos).col
-        return new Vector3d(0, 0, 0);
+        return output.set(0, 0, 0);
     }
 
     @Override
-    public MinecraftItem asItem() {
-        return new MinecraftItemImpl(blockState.getBlock().asItem());
+    public MinecraftItemStack asItem() {
+        return new MinecraftItemStackImpl(new ItemStack(blockState.getBlock().asItem()));
     }
 
     @Override
@@ -269,12 +262,12 @@ public record MinecraftBlockStateImpl(BlockState blockState, BlockPos blockPos) 
         return textures;
     }
 
-    // Helper to convert a VoxelShape into a 2D list of points
-    private static List<List<Vector3d>> voxelShapeToTable(VoxelShape voxelShape) {
-        List<List<Vector3d>> shapes = new ArrayList<>();
-        for (AABB aabb : voxelShape.toAabbs())
-            shapes.add(List.of(new Vector3d(aabb.minX, aabb.minY, aabb.minZ), new Vector3d(aabb.maxX, aabb.maxY, aabb.maxZ)));
-        return shapes;
+    // Helper to convert a VoxelShape to the expected core representation
+    private static List<MinecraftBlockState.AABB> voxelShapeToCore(VoxelShape voxelShape) {
+        List<MinecraftBlockState.AABB> aabbs = new ArrayList<>();
+        for (net.minecraft.world.phys.AABB aabb : voxelShape.toAabbs())
+            aabbs.add(new MinecraftBlockState.AABB(aabb.minX, aabb.minY, aabb.minZ, aabb.maxX, aabb.maxY, aabb.maxZ));
+        return aabbs;
     }
 
     private static ClientLevel getLevel() {

@@ -7,6 +7,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -56,9 +57,7 @@ public class GameRendererMixin {
     public void client_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the client_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())) {
-            clientRenderSubmissions = invokeRenderEvent(Event.CLIENT_RENDER, new CallbackItem.Tuple2<>(new CallbackItem.F32(tickDelta), worldView));
-        }
+        clientRenderSubmissions = invokeRenderEvent(Event.CLIENT_RENDER, new CallbackItem.F32(tickDelta));
     }
 
     // Run world_render just before LevelRenderer.renderLevel().
@@ -66,8 +65,10 @@ public class GameRendererMixin {
     public void world_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the world_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        // Try to get the world view
-        try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())) {
+        // If this function is being run at all, then we know the world is not null!
+        ClientLevel level = Minecraft.getInstance().level;
+        assert level != null;
+        try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl(level))) {
             FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEvent(Event.WORLD_RENDER, new CallbackItem.Tuple2<>(new CallbackItem.F32(tickDelta), worldView));
             // Store submissions in the LevelRenderState for later
             FiguraCallbackSubmit clientRenderSubmissions = this.clientRenderSubmissions; // Capture
@@ -92,7 +93,7 @@ public class GameRendererMixin {
                     var funcView = callback.a().value();
                     if (funcView == null) continue;
                     var data = callback.b();
-                    var func = funcView.getCallback();
+                    var func = funcView.getValue();
                     if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
                     func.call(data);
                 }

@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Objects;
 import java.util.UUID;
 
 // Mixin to run the entity_tick event
@@ -35,18 +36,16 @@ public class ClientLevelMixin {
     }
 
     @Unique
-    private static void callTickMethod(Entity entity) {
-        AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
+    private void callTickMethod(Entity entity) {
+        AvatarView<UUID> avatar = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl<>(entity));
 
         if (avatar == null) return;
         avatar.use(a -> {
             try (
-                    EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity));
-                    WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())
+                    EntityView<MinecraftEntityImpl<?>> entityView = new EntityView<>(new MinecraftEntityImpl<>(entity));
+                    WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl((ClientLevel) (Object) this))
             ) {
-                a.getEventListener(Event.ENTITY_TICK).invoke(
-                        new CallbackItem.Tuple2<>(entityView, worldView)
-                    );
+                a.getEventListener(Event.ENTITY_TICK).invoke(new CallbackItem.Tuple2<>(entityView, worldView));
             }
         });
     }

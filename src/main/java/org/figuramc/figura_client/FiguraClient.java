@@ -20,6 +20,7 @@ import org.figuramc.figura_core.data.materials.ModuleMaterials;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
+import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +62,11 @@ public class FiguraClient implements ClientModInitializer {
 
 	public static Identifier locate(String path) {
 		return Identifier.fromNamespaceAndPath(MOD_ID, path);
+	}
+
+	public static MinecraftIdentifier UNKNOWN = new MinecraftIdentifier("minecraft", "unknown");
+	public static MinecraftIdentifier coreIdent(Identifier minecraft) {
+		return new MinecraftIdentifier(minecraft.getNamespace(), minecraft.getPath());
 	}
 
 	@Override

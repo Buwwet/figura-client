@@ -22,10 +22,15 @@ public class MinecraftMixin {
         // Tick the things that need ticking
         AvatarManagers.pollAll();
         AvatarManagers.forEachAvatar(avatar -> {
-            avatar.tick();
-
-            try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl())) {
-                avatar.getEventListener(Event.CLIENT_TICK).invoke(worldView);
+             // TODO: What do we do if level is null here?
+            // Always invoke CLIENT_TICK:
+            avatar.getEventListener(Event.CLIENT_TICK).invoke(CallbackItem.Unit.INSTANCE);
+            // Invoke WORLD_TICK if the world is non-null:
+            ClientLevel level = Minecraft.getInstance().level;
+            if (level != null) {
+                try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl(level))) {
+                    avatar.getEventListener(Event.WORLD_TICK).invoke(worldView);
+                }
             }
         });
     }
