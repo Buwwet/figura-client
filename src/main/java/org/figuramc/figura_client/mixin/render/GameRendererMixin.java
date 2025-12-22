@@ -7,6 +7,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -18,6 +19,7 @@ import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.ducks.LevelRenderStateAccess;
+import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_core.avatars.components.HudRoot;
@@ -26,6 +28,7 @@ import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
 import org.figuramc.figura_core.script_hooks.callback.items.FuncView;
+import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -62,14 +65,18 @@ public class GameRendererMixin {
     public void world_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the world_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEvent(Event.WORLD_RENDER, new CallbackItem.F32(tickDelta));
-
-        // Store submissions in the LevelRenderState for later
-        FiguraCallbackSubmit clientRenderSubmissions = this.clientRenderSubmissions; // Capture
-        ((LevelRenderStateAccess) this.levelRenderState).figura_client$setCodeSubmit(() -> {
-            clientRenderSubmissions.run();
-            worldRenderSubmissions.run();
-        });
+        // If this function is being run at all, then we know the world is not null!
+        ClientLevel level = Minecraft.getInstance().level;
+        assert level != null;
+        try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl(level))) {
+            FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEvent(Event.WORLD_RENDER, new CallbackItem.Tuple2<>(new CallbackItem.F32(tickDelta), worldView));
+            // Store submissions in the LevelRenderState for later
+            FiguraCallbackSubmit clientRenderSubmissions = this.clientRenderSubmissions; // Capture
+            ((LevelRenderStateAccess) this.levelRenderState).figura_client$setCodeSubmit(() -> {
+                clientRenderSubmissions.run();
+                worldRenderSubmissions.run();
+            });
+        }
     }
 
     // Helper for invoking all render events, having them return callbacks to happen on the render thread
@@ -86,7 +93,7 @@ public class GameRendererMixin {
                     var funcView = callback.a().value();
                     if (funcView == null) continue;
                     var data = callback.b();
-                    var func = funcView.getCallback();
+                    var func = funcView.getValue();
                     if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
                     func.call(data);
                 }
