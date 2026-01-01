@@ -4,15 +4,10 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
 import org.figuramc.figura_core.minecraft_interop.game_data.GameDataProvider;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEntity;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItem;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class GameDataProviderImpl implements GameDataProvider {

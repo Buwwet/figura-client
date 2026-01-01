@@ -1,6 +1,7 @@
 package org.figuramc.figura_client.renderer.part.vanilla_optimized;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.opengl.GlBuffer;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -40,7 +41,9 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
             .putVec4().putVec4().putVec4().putVec4() // UV modifiers
             .putVec2() // ScreenSize
             .putFloat() // GameTime
-            .align(4).get();
+            .align(16) // Align by 16 since there's vec4s in here
+            .align(RenderSystem.getDevice().getUniformOffsetAlignment()) // Align by impl-dependent offset alignment
+            .get();
 
     private @Nullable State state;
 
@@ -80,7 +83,7 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
             GpuBuffer transformsBuffer = RenderSystem.getDevice().createBuffer(
                     () -> "Figura Transforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) root.transformCount * PartDataStruct.GPU_SIZE);
             GpuBuffer figuraUniformsBuffer = RenderSystem.getDevice().createBuffer(
-                    () -> "Figura Uniforms Buffer", GpuBuffer.USAGE_MAP_WRITE, FIGURA_UNIFORMS_SIZE);
+                    () -> "Figura Uniforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) this.root.drawCalls.size() * FIGURA_UNIFORMS_SIZE); // Separate buffer range for each draw call
             // Generate draw call infos
             List<DrawCallState> drawCallInfos = new ArrayList<>();
             // Cache VBOs
@@ -128,10 +131,13 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
         }
 
         // Loop over draw calls
-        for (var drawCall : state.drawCallInfos) {
+
+        for (int drawIndex = 0; drawIndex < state.drawCallInfos.size(); drawIndex++) {
+            DrawCallState drawCall = state.drawCallInfos.get(drawIndex);
 
             // Figura uniforms
-            try (var figuraUniformsView = encoder.mapBuffer(state.figuraUniformsBuffer, false, true)) {
+            GpuBufferSlice uniformsBufferSlice = state.figuraUniformsBuffer.slice((long) drawIndex * FIGURA_UNIFORMS_SIZE, FIGURA_UNIFORMS_SIZE);
+            try (var figuraUniformsView = encoder.mapBuffer(uniformsBufferSlice, false, true)) {
                 ByteBuffer buf = figuraUniformsView.data();
                 transformStack.peekPosition().get(0, buf); // CamRelWorldMat
                 RenderSystem.getModelViewMatrix().get(64, buf); // ViewMat
@@ -179,7 +185,7 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                 pass.setPipeline(drawCall.pipeline);
                 // Uniforms
                 RenderSystem.bindDefaultUniforms(pass);
-                pass.setUniform("FiguraUniforms", state.figuraUniformsBuffer);
+                pass.setUniform("FiguraUniforms", uniformsBufferSlice);
                 // Textures (Pain)
                 var main_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 0);
                 var main_handle = main_binding == null ? null : main_binding.textureHandle();
@@ -208,11 +214,7 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                 // Draw! (Base vertex, Base index, Index Count, Instance Count)
                 pass.drawIndexed(0, 0, indexCount, 1);
             }
-
-
         }
-
-
     }
 
     @Override

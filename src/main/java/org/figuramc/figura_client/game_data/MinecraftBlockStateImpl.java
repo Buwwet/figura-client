@@ -2,7 +2,6 @@ package org.figuramc.figura_client.game_data;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.client.renderer.block.model.BlockStateModel;
@@ -10,36 +9,29 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
 import org.figuramc.figura_core.minecraft_interop.game_data.block.MinecraftBlockState;
-import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItem;
 import org.figuramc.figura_core.minecraft_interop.game_data.item.MinecraftItemStack;
 import org.figuramc.figura_core.util.ListUtils;
-import org.joml.Vector3d;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.joml.Vector3ic;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public record MinecraftBlockStateImpl(BlockState blockState, BlockPos blockPos) implements MinecraftBlockState {
 

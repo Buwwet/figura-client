@@ -2,29 +2,25 @@ package org.figuramc.figura_client.game_data;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.HasCustomInventoryScreen;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.phys.*;
+import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
 import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
-import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityPose;
 import org.figuramc.figura_core.minecraft_interop.game_data.entity.MinecraftEntity;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
 import org.figuramc.figura_core.util.ListUtils;
-import org.figuramc.figura_core.util.data_structures.Pair;
-import org.joml.Vector2d;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
 import org.jspecify.annotations.Nullable;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 public class MinecraftEntityImpl<T extends Entity> implements MinecraftEntity {
 

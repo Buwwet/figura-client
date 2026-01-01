@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
@@ -22,7 +21,6 @@ import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
 import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
-import org.figuramc.figura_core.minecraft_interop.game_data.entity.EntityKind;
 import org.figuramc.figura_core.minecraft_interop.vanilla_parts.VanillaModel;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -30,15 +28,13 @@ import org.lwjgl.util.tinyfd.TinyFileDialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.EnumMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class FiguraClient implements ClientModInitializer {
 
 	// Maps for important objects
-	public static final Map<EntityType<?>, EntityKind> ENTITY_KINDS = new ConcurrentHashMap<>();
 	public static final EnumMap<ItemDisplayContext, ItemRenderContext> RENDER_CONTEXTS = new EnumMap<>(ItemDisplayContext.class);
 	static {
 		RENDER_CONTEXTS.put(ItemDisplayContext.NONE, new ItemRenderContext("none", false, false, null));
@@ -91,22 +87,22 @@ public class FiguraClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (debugLoadAvatar.consumeClick()) {
 				client.player.displayClientMessage(Component.literal("Opening avatar selection dialog..."), false);
-				Path avatarsFolder = FiguraConnectionPoint.PATH_PROVIDER.getAvatarsFolder().getNow(null);
+				File avatarsFolder = FiguraConnectionPoint.PATH_PROVIDER.getAvatarsFolder().exceptionally(x -> null).join();
 				if (avatarsFolder == null) {
 					client.player.displayClientMessage(Component.literal("No figura directory has been chosen. Cancelling."), false);
 					return;
 				}
-				String defaultPath = avatarsFolder.toAbsolutePath().toString();
+				String defaultPath = avatarsFolder.toPath().toString();
 				@Nullable String pathString = TinyFileDialogs.tinyfd_selectFolderDialog("Choose an avatar folder to load", defaultPath);
 				if (pathString == null) {
 					client.player.displayClientMessage(Component.literal("No avatar folder selected. Cancelling."), false);
 					return;
 				}
-				Path avatarPath = Path.of(pathString);
+				File avatarFile = Path.of(pathString).toFile();
 				// Load the avatar
 				client.player.displayClientMessage(Component.literal("Loading avatar at " + pathString), false);
 				AvatarManagers.ENTITIES.load(client.player.getUUID(), () -> {
-					ModuleMaterials materials = ModuleImporter.importPath(avatarPath);
+					ModuleMaterials materials = ModuleImporter.importFromFile(avatarFile);
 					AvatarModules modules = AvatarModules.loadModules(materials);
 					VanillaModel vanillaModel = new MinecraftEntityImpl(client.player).getModel();
 					return AvatarTemplates.localPlayer(modules, vanillaModel);
