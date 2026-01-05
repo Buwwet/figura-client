@@ -15,9 +15,11 @@ import org.figuramc.figura_client.text.ConsoleOutputImpl;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
+import org.figuramc.figura_core.avatars.components.AvatarProfiling;
 import org.figuramc.figura_core.data.importer.v1.ModuleImporter;
 import org.figuramc.figura_core.data.materials.ModuleMaterials;
 import org.figuramc.figura_core.manage.AvatarManagers;
+import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
 import org.figuramc.figura_core.minecraft_interop.game_data.MinecraftIdentifier;
@@ -31,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class FiguraClient implements ClientModInitializer {
 
@@ -84,6 +88,12 @@ public class FiguraClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_0,
 				category
 		));
+		KeyMapping printProfiling = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+				"key.figura.print_profiling_info",
+				InputConstants.Type.KEYSYM,
+				GLFW.GLFW_KEY_P,
+				category
+		));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (debugLoadAvatar.consumeClick()) {
 				client.player.displayClientMessage(Component.literal("Opening avatar selection dialog..."), false);
@@ -108,6 +118,24 @@ public class FiguraClient implements ClientModInitializer {
 					return AvatarTemplates.localPlayer(modules, vanillaModel);
 				});
 			}
+
+			while (printProfiling.consumeClick()) {
+				AvatarView<UUID> avatar = AvatarManagers.ENTITIES.get(FiguraConnectionPoint.GAME_DATA_PROVIDER.getLocalUUID());
+				if (avatar == null) FiguraConnectionPoint.CONSOLE_OUTPUT.logSimple(null, "No avatar in use");
+				String[] out = new String[] { "No message" };
+				avatar.use(avi -> {
+					AvatarProfiling profiling = avi.getComponent(AvatarProfiling.TYPE);
+					if (profiling == null) {
+						out[0] = "Avatar doesn't have profiling enabled";
+						return;
+					}
+					out[0] = profiling.measurers.entrySet().stream().map(
+							entry -> entry.getKey().fullName + ": " + entry.getValue().runningAverage() + " nanos average")
+							.collect(Collectors.joining("\n"));
+				});
+				FiguraConnectionPoint.CONSOLE_OUTPUT.logSimple(null, out[0]);
+			}
+
 		});
 
 	}

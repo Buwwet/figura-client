@@ -3,16 +3,25 @@ package org.figuramc.figura_client.util;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import net.minecraft.util.Util;
 import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_client.textures.MinecraftTextureImpl;
 import org.figuramc.figura_client.textures.OwnedMinecraftTextureImpl;
+import org.figuramc.figura_core.avatars.Avatar;
+import org.figuramc.figura_core.avatars.components.AvatarEvents;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
+import org.figuramc.figura_core.script_hooks.Event;
+import org.figuramc.figura_core.script_hooks.EventListener;
+import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
+import org.figuramc.figura_core.script_hooks.callback.items.CallbackView;
+import org.figuramc.figura_core.script_hooks.timing.AvatarTimeTracker;
+import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.figuramc.figura_core.util.data_structures.NullEmptyStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
@@ -85,4 +94,34 @@ public class RenderUtils {
     public static void runOnRenderThread(Runnable task) {
         TASKS.add(task);
     }
+
+    // Running rendering events, a couple mixins use this
+    public static <Args extends CallbackItem> @Nullable FiguraCallbackSubmit invokeRenderEvent(Avatar<?> avatar, ProfilingCategory category, ProfilingCategory callbacksCategory, Event<Args, CallbackItem.Tuple2<CallbackItem.Optional<CallbackView<CallbackItem, CallbackItem.Unit>>, CallbackItem>> renderEvent, Args args) {
+        @Nullable AvatarEvents events = avatar.getComponent(AvatarEvents.TYPE);
+        if (events == null) return null;
+        var eventListener = events.getEventListener(renderEvent);
+
+        // Invoke the event and get some render-thread callbacks
+        // Give this 5 milliseconds to run by default (TODO: configurable)
+        var callbacks = AvatarTimeTracker.getInstance().runTimedFor(avatar, category, 5_000_000L, () -> eventListener.invokeToList(args));
+
+        if (callbacks == null || callbacks.isEmpty()) return null;
+        AvatarView<?> view = new AvatarView<>(avatar);
+        return () -> view.use(renderThreadAvatar -> {
+            // Run all the callbacks for this avatar.
+            // Give this 5 milliseconds to run by default (TODO: configurable)
+            AvatarTimeTracker.getInstance().runTimed(renderThreadAvatar, callbacksCategory, 5_000_000L, () -> {
+                for (var callback : callbacks) {
+                    var funcView = callback.a().value();
+                    if (funcView == null) continue;
+                    var data = callback.b();
+                    var func = funcView.getValue();
+                    if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
+                    func.call(data);
+                }
+            });
+        });
+    }
+
+
 }

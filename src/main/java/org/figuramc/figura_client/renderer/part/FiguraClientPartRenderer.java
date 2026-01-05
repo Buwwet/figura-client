@@ -1,7 +1,7 @@
 package org.figuramc.figura_client.renderer.part;
 
 import net.minecraft.client.renderer.MultiBufferSource;
-import org.figuramc.figura_core.avatars.AvatarError;
+import org.figuramc.figura_core.avatars.errors.AvatarError;
 import org.figuramc.figura_core.minecraft_interop.render.PartRenderer;
 import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;

@@ -7,29 +7,32 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.util.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.CachedOrthoProjectionMatrixBuffer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.ducks.LevelRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
+import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.avatars.components.HudRoot;
 import org.figuramc.figura_core.manage.AvatarManagers;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
-import org.figuramc.figura_core.script_hooks.callback.items.FuncView;
+import org.figuramc.figura_core.script_hooks.callback.items.CallbackView;
 import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
+import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
@@ -57,7 +60,7 @@ public class GameRendererMixin {
     public void client_render(DeltaTracker deltaTracker, CallbackInfo ci) {
         // Run the client_render event on each avatar
         float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        clientRenderSubmissions = invokeRenderEvent(Event.CLIENT_RENDER, new CallbackItem.F32(tickDelta));
+        clientRenderSubmissions = invokeRenderEventForAllAvatars(ProfilingCategory.CLIENT_RENDER_EVENT, ProfilingCategory.CLIENT_RENDER_EVENT, Event.CLIENT_RENDER, new CallbackItem.F32(tickDelta));
     }
 
     // Run world_render just before LevelRenderer.renderLevel().
@@ -69,7 +72,7 @@ public class GameRendererMixin {
         ClientLevel level = Minecraft.getInstance().level;
         assert level != null;
         try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl(level))) {
-            FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEvent(Event.WORLD_RENDER, new CallbackItem.Tuple2<>(new CallbackItem.F32(tickDelta), worldView));
+            FiguraCallbackSubmit worldRenderSubmissions = invokeRenderEventForAllAvatars(ProfilingCategory.WORLD_RENDER_EVENT, ProfilingCategory.WORLD_RENDER_EVENT, Event.WORLD_RENDER, new CallbackItem.Tuple2<>(new CallbackItem.F32(tickDelta), worldView));
             // Store submissions in the LevelRenderState for later
             FiguraCallbackSubmit clientRenderSubmissions = this.clientRenderSubmissions; // Capture
             ((LevelRenderStateAccess) this.levelRenderState).figura_client$setCodeSubmit(() -> {
@@ -80,27 +83,14 @@ public class GameRendererMixin {
     }
 
     // Helper for invoking all render events, having them return callbacks to happen on the render thread
-    @Unique private static <Args extends CallbackItem> FiguraCallbackSubmit invokeRenderEvent(Event<Args, CallbackItem.Tuple2<CallbackItem.Optional<FuncView<CallbackItem, CallbackItem.Unit>>, CallbackItem>> renderEvent, Args args) {
-        List<Runnable> allCallbacks = new ArrayList<>();
+    // Just calls the RenderUtils method on all avatars and unifies into a single callback submit
+    @Unique private static <Args extends CallbackItem> FiguraCallbackSubmit invokeRenderEventForAllAvatars(ProfilingCategory category, ProfilingCategory callbacksCategory, Event<Args, CallbackItem.Tuple2<CallbackItem.Optional<CallbackView<CallbackItem, CallbackItem.Unit>>, CallbackItem>> renderEvent, Args args) {
+        List<FiguraCallbackSubmit> submissions = new ArrayList<>();
         AvatarManagers.forEachAvatar(avatar -> {
-            // Invoke the event and get some render-thread callbacks
-            var callbacks = avatar.getEventListener(renderEvent).invokeFor(args);
-            if (callbacks.isEmpty()) return;
-            AvatarView<?> view = new AvatarView<>(avatar);
-            Runnable invokeCallbacks = () -> view.use(renderThreadAvatar -> {
-                // Run all the callbacks for this avatar:
-                for (var callback : callbacks) {
-                    var funcView = callback.a().value();
-                    if (funcView == null) continue;
-                    var data = callback.b();
-                    var func = funcView.getValue();
-                    if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
-                    func.call(data);
-                }
-            });
-            allCallbacks.add(invokeCallbacks);
+            @Nullable FiguraCallbackSubmit submission = RenderUtils.invokeRenderEvent(avatar, category, callbacksCategory, renderEvent, args);
+            if (submission != null) submissions.add(submission);
         });
-        return () -> allCallbacks.forEach(Runnable::run);
+        return () -> submissions.forEach(FiguraCallbackSubmit::run);
     }
 
     // GPU resources we'll need to close

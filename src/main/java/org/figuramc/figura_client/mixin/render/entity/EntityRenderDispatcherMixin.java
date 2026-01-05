@@ -22,6 +22,7 @@ import org.figuramc.figura_client.ducks.EntityRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
+import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_client.renderer.submit.FiguraPartSubmit;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_client.vanilla_model.VanillaModelCache;
@@ -32,6 +33,7 @@ import org.figuramc.figura_core.script_hooks.Event;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
 import org.figuramc.figura_core.script_hooks.callback.items.EntityView;
 import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
+import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -67,24 +69,12 @@ public abstract class EntityRenderDispatcherMixin {
                     EntityView<?> entityView = new EntityView<>(new MinecraftEntityImpl<>(entity));
                     WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl((ClientLevel) entity.level()))
             ) {
-                // Invoke entity rendering event, obtaining callbacks
-                var callbacks = avatar.getEventListener(Event.ENTITY_RENDER).invokeFor(
-                        new CallbackItem.Tuple3<>(new CallbackItem.F32(delta), entityView, worldView));
-                // Invoke the callbacks later on the render thread by setting the code submit
-                access.figura_client$setCodeSubmit(() -> {
-                    // We need to acquire the avatar again in here; since this runs later.
-                    view.use(avatar2 -> {
-                        // Run all the callbacks!
-                        for (var callback : callbacks) {
-                            var funcView = callback.a().value();
-                            if (funcView == null) continue;
-                            var data = callback.b();
-                            var func = funcView.getValue();
-                            if (func == null) continue; // Skip if it was revoked (I don't think it *can* be revoked? But we'll check anyway)
-                            func.call(data);
-                        }
-                    });
-                });
+                FiguraCallbackSubmit submission = RenderUtils.invokeRenderEvent(avatar, ProfilingCategory.ENTITY_RENDER_EVENT, ProfilingCategory.ENTITY_RENDER_EVENT, Event.ENTITY_RENDER, new CallbackItem.Tuple3<>(
+                        new CallbackItem.F32(delta),
+                        entityView,
+                        worldView
+                ));
+                access.figura_client$setCodeSubmit(submission);
             }
 
             // Set up the part submission too, if needed

@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import org.figuramc.figura_client.renderer.part.text_rendering.FiguraTextRenderer;
 import org.figuramc.figura_client.util.RenderUtils;
-import org.figuramc.figura_core.avatars.AvatarError;
+import org.figuramc.figura_core.avatars.errors.AvatarError;
+import org.figuramc.figura_core.avatars.errors.AvatarOutOfMemoryError;
 import org.figuramc.figura_core.model.part.tasks.TextTask;
 import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.figuramc.figura_core.model.rendering.shader.BuiltinShader;
@@ -17,6 +18,7 @@ import org.figuramc.figura_core.model.rendering.vertex.FiguraVertexFormat;
 import org.figuramc.figura_core.util.ListUtils;
 import org.figuramc.figura_core.util.MathUtils;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
+import org.figuramc.figura_core.util.exception.FiguraException;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -47,7 +49,11 @@ public class CompatibleRenderer extends FiguraClientPartRenderer {
 
     private void rebuild() throws AvatarError {
         // Rebuild the vertices
-        root.rebuildVertices();
+        try {
+            root.rebuildVertices();
+        } catch (AvatarOutOfMemoryError avatarOOM) {
+            throw new AvatarError(FiguraException.INTERNAL_ERROR, "TODO: OOM Errors");
+        }
         // Recreate draw call data
         cachedDrawCallData = new ArrayList<>(root.drawCalls.size());
         for (var drawCall : root.drawCalls) {

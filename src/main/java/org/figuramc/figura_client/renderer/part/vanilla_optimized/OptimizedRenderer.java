@@ -8,7 +8,6 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.SamplerCache;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
@@ -16,15 +15,16 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.part.text_rendering.FiguraTextRenderer;
 import org.figuramc.figura_client.util.RenderUtils;
-import org.figuramc.figura_core.avatars.AvatarError;
+import org.figuramc.figura_core.avatars.errors.AvatarError;
+import org.figuramc.figura_core.avatars.errors.AvatarOutOfMemoryError;
 import org.figuramc.figura_core.model.part.tasks.TextTask;
 import org.figuramc.figura_core.model.rendering.PartDataStruct;
 import org.figuramc.figura_core.model.rendering.RenderingRoot;
-import org.figuramc.figura_core.model.rendering.shader.BuiltinShader;
 import org.figuramc.figura_core.model.rendering.vertex.FiguraVertexFormat;
 import org.figuramc.figura_core.util.ListUtils;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.figuramc.figura_core.util.data_structures.Pair;
+import org.figuramc.figura_core.util.exception.FiguraException;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -77,7 +77,11 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
     // Re-create the state if it was lost
     private void rebuild() throws AvatarError {
         assert state == null;
-        root.rebuildVertices();
+        try {
+            root.rebuildVertices();
+        } catch (AvatarOutOfMemoryError avatarOOM) {
+            throw new AvatarError(FiguraException.INTERNAL_ERROR, "TODO: OOM Errors");
+        }
         if (!root.builtVertexData.isEmpty()) {
             // Set up shared buffers
             GpuBuffer transformsBuffer = RenderSystem.getDevice().createBuffer(
