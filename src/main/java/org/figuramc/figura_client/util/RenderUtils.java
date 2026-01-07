@@ -10,6 +10,7 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
+import org.figuramc.figura_client.textures.GpuMinecraftTextureImpl;
 import org.figuramc.figura_client.textures.MinecraftTextureImpl;
 import org.figuramc.figura_client.textures.OwnedMinecraftTextureImpl;
 import org.figuramc.figura_core.avatars.Avatar;
@@ -51,6 +52,7 @@ public class RenderUtils {
         return switch (texture) {
             case MinecraftTextureImpl impl -> impl.backing.getTexture();
             case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.getTexture();
+            case GpuMinecraftTextureImpl viewImpl -> viewImpl.getTexture();
             case null -> null;
             default -> throw new IllegalStateException("Unexpected implementation of MinecraftTexture: " + texture.getClass());
         };
@@ -61,6 +63,7 @@ public class RenderUtils {
         return switch (texture) {
             case MinecraftTextureImpl impl -> impl.backing.getTextureView();
             case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.getTextureView();
+            case GpuMinecraftTextureImpl viewImpl -> viewImpl.getTextureView();
             case null -> null;
             default -> throw new IllegalStateException("Unexpected implementation of MinecraftTexture: " + texture.getClass());
         };

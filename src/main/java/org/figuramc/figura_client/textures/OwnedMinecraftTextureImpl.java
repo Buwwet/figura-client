@@ -9,6 +9,8 @@ import com.mojang.blaze3d.textures.TextureFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.SimpleTexture;
+import net.minecraft.client.renderer.texture.TextureContents;
 import net.minecraft.resources.Identifier;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.util.RenderUtils;
@@ -44,6 +46,14 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
         String name = "figura_texture_" + nextID.getAndIncrement();
         this.location = Identifier.fromNamespaceAndPath(FiguraClient.MOD_ID, name);
         this.backingTexture = NativeImage.read(pngBytes);
+        this.width = backingTexture.getWidth();
+        this.height = backingTexture.getHeight();
+    }
+
+    // Load a vanilla texture for ourselves.
+    public OwnedMinecraftTextureImpl(Identifier identifier) throws IOException {
+        this.location = identifier;
+        this.backingTexture = TextureContents.load(Minecraft.getInstance().getResourceManager(), identifier).image();
         this.width = backingTexture.getWidth();
         this.height = backingTexture.getHeight();
     }
