@@ -50,14 +50,6 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
         this.height = backingTexture.getHeight();
     }
 
-    // Load a vanilla texture for ourselves.
-    public OwnedMinecraftTextureImpl(Identifier identifier) throws IOException {
-        this.location = identifier;
-        this.backingTexture = TextureContents.load(Minecraft.getInstance().getResourceManager(), identifier).image();
-        this.width = backingTexture.getWidth();
-        this.height = backingTexture.getHeight();
-    }
-
     private boolean isClosed() {
         return backingTexture == null;
     }
@@ -97,28 +89,22 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
 
     @Override
     public CompletableFuture<Void> commit() {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderUtils.runOnRenderThread(() -> {
+        return RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
                 createGpuTexIfNeeded();
                 RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture);
             }
-            future.complete(null);
         });
-        return future;
     }
 
     @Override
     public CompletableFuture<Void> commitRegion(int x, int y, int width, int height) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderUtils.runOnRenderThread(() -> {
+        return RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
                 createGpuTexIfNeeded();
                 RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture, 0, 0, x, y, width, height, x, y);
             }
-            future.complete(null);
         });
-        return future;
     }
 
     @Override
